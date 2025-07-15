@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -7,48 +10,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
-enum Role {
-  USER
-  ADMIN
-  EDITOR
-}
-
-enum PostStatus {
-  DRAFT
-  PUBLISHED
-  ARCHIVED
-}
-
-enum CommentStatus {
-  PENDING
-  APPROVED
-  REJECTED
-  SPAM
-}
-
-// User model
 model User {
-  id            String          @id @default(cuid())
-  email         String          @unique
-  name          String?
-  image         String?
-  bio           String?         @db.Text
-  role          Role            @default(USER)
-  emailVerified DateTime?
-  createdAt     DateTime        @default(now())
-  updatedAt     DateTime        @updatedAt
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  bio       String?  @db.Text
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  accounts      Account[]
-  sessions      Session[]
-  posts         Post[]
-  comments      Comment[]
+  posts    Post[]
+  comments Comment[]
 
   @@map("users")
 }
 
-// Posts model
 model Post {
   id             String     @id @default(cuid())
   title          String
@@ -68,10 +46,10 @@ model Post {
   updatedAt      DateTime   @updatedAt
 
   // Relations
-  author         User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  categories     PostCategory[]
-  tags           PostTag[]
-  comments       Comment[]
+  author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categories PostCategory[]
+  tags       PostTag[]
+  comments   Comment[]
 
   @@index([slug])
   @@index([status, published])
@@ -80,63 +58,56 @@ model Post {
   @@map("posts")
 }
 
-// Categories model
 model Category {
-  id          String         @id @default(cuid())
-  name        String         @unique
-  slug        String         @unique
-  description String?        @db.Text
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?  @db.Text
   color       String? // hex color
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   // Relations
-  posts       PostCategory[]
+  posts PostCategory[]
 
   @@map("categories")
 }
 
-// Tags model
 model Tag {
-  id        String    @id @default(cuid())
-  name      String    @unique
-  slug      String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  posts     PostTag[]
+  posts PostTag[]
 
   @@map("tags")
 }
 
-// Post-Category relationship (many-to-many)
 model PostCategory {
   postId     String
   categoryId String
 
-  // Relations
-  post       Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@id([postId, categoryId])
   @@map("post_categories")
 }
 
-// Post-Tag relationship (many-to-many)
 model PostTag {
   postId String
   tagId  String
 
-  // Relations
-  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag  Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([postId, tagId])
   @@map("post_tags")
 }
 
-// Comments model
 model Comment {
   id         String        @id @default(cuid())
   content    String        @db.Text
@@ -150,17 +121,20 @@ model Comment {
   updatedAt  DateTime      @updatedAt
 
   // Relations
-  post       Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
-  author     User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  parent     Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
-  replies    Comment[] @relation("CommentReplies")
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author   User?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  parent   Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies  Comment[] @relation("CommentReplies")
 
   @@index([postId])
   @@index([status])
   @@map("comments")
 }
 
-// NextAuth.js required models
+// Eliminar tablas de NextAuth
+// Comentar o eliminar estas secciones:
+
+/*
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -186,8 +160,7 @@ model Session {
   sessionToken String   @unique
   userId       String
   expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -198,5 +171,26 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
-  @@map("verificationtokens")
+  @@map("verification_tokens")
+}
+*/
+
+// Enums
+enum Role {
+  USER
+  ADMIN
+  EDITOR
+}
+
+enum PostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum CommentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SPAM
 }
