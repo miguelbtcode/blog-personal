@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 6, "column": 0}, "map": {"version":3,"sources":[],"names":[],"mappings":"","debugId":null}},
+    {"offset": {"line": 18, "column": 0}, "map": {"version":3,"sources":["file:///Users/miguelbarreto/GithubProjects/blog-personal/src/app/page.tsx"],"sourcesContent":["import { Metadata } from \"next\";\n\nexport const metadata: Metadata = {\n  title: \"Inicio\",\n  description:\n    \"Bienvenido a mi blog personal. Aquí encontrarás artículos sobre tecnología, desarrollo web y más.\",\n};\n\nexport default async function HomePage() {\n  return (\n    <>\n      <main className=\"flex-1\"></main>\n    </>\n  );\n}\n"],"names":[],"mappings":";;;;;;AAEO,MAAM,WAAqB;IAChC,OAAO;IACP,aACE;AACJ;AAEe,eAAe;IAC5B,qBACE;kBACE,cAAA,8OAAC;YAAK,WAAU;;;;;;;AAGtB","debugId":null}}]
+}
