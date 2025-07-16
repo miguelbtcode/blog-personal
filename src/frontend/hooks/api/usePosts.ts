@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { usePostsStore } from "@/frontend/stores/posts.store";
-import type { PostQueryParams } from "@/shared/types/blog.types";
+import type { PostQueryParams } from "@/types/blog.types";
 
 interface UsePostsOptions {
   enabled?: boolean;

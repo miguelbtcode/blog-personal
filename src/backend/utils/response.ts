@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
-import type { ApiResponse } from "@/shared/types/api.types";
+import type { ApiResponse } from "@/types/api.types";
 
 export const createResponse = {
   success: <T>(data: T, message?: string, status = 200): NextResponse => {

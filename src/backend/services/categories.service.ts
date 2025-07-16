@@ -1,4 +1,4 @@
-import { Category } from "@/shared/types/blog.types";
+import { Category } from "@/types/blog.types";
 import { CategoriesRepository } from "../repositories/categories.repository";
 import { generateSlug } from "@/lib/utils";
 

@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, Clock, MessageCircle, Eye } from "lucide-react";
-import type { Post } from "@/shared/types/blog.types";
+import type { Post } from "@/types/blog.types";
 import { formatDate } from "@/lib/utils";
 
 interface BlogCardProps {

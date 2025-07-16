@@ -3,8 +3,8 @@ import Link from "next/link";
 import { BlogCard } from "../blog/BlogCard";
 import { Pagination } from "@/shared/components/ui/Pagination";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
-import type { Post } from "@/shared/types/blog.types";
-import type { PaginationMeta } from "@/shared/types/api.types";
+import type { Post } from "@/types/blog.types";
+import type { PaginationMeta } from "@/types/api.types";
 import { FileText, ArrowRight } from "lucide-react";
 
 interface LatestPostsProps {

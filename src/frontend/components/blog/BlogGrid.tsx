@@ -5,7 +5,7 @@ import { BlogCard } from "./BlogCard";
 import { LoadingGrid } from "@/shared/components/ui/LoadingGrid";
 import { ErrorMessage } from "@/shared/components/ui/ErrorMessage";
 import { Pagination } from "@/shared/components/ui/Pagination";
-import type { PostQueryParams } from "@/shared/types/blog.types";
+import type { PostQueryParams } from "@/types/blog.types";
 import { FileText } from "lucide-react";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
 

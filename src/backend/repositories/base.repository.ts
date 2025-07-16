@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import type { PaginationMeta } from "@/shared/types/api.types";
+import type { PaginationMeta } from "@/types/api.types";
 
 export abstract class BaseRepository {
   protected db = prisma;

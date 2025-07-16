@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { apiService } from "@/frontend/services/api.service";
-import type { Post, PostQueryParams } from "@/shared/types/blog.types";
-import type { PaginationMeta } from "@/shared/types/api.types";
+import type { Post, PostQueryParams } from "@/types/blog.types";
+import type { PaginationMeta } from "@/types/api.types";
 
 interface PostsStore {
   // State

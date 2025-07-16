@@ -1,4 +1,3 @@
-// src/app/page.tsx
 import HomePage from "@/app/(frontend)/home/page";
 
 export default function RootPage() {

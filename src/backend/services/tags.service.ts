@@ -1,4 +1,4 @@
-import { Tag } from "@/shared/types/blog.types";
+import { Tag } from "@/types/blog.types";
 import { TagsRepository } from "../repositories/tags.repository";
 import { generateSlug } from "@/lib/utils";
 
