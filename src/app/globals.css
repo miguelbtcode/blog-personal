@@ -1,21 +1,37 @@
 @import "tailwindcss";
 
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+
 @theme {
   --color-background: #ffffff;
   --color-foreground: #0f172a;
-  --color-primary: #3b82f6;
+  --color-primary: #466853;
   --color-primary-foreground: #ffffff;
   --color-secondary: #f1f5f9;
   --color-secondary-foreground: #0f172a;
   --color-muted: #f1f5f9;
   --color-muted-foreground: #64748b;
-  --color-accent: #f1f5f9;
-  --color-accent-foreground: #0f172a;
+  --color-accent: #795f54;
+  --color-accent-foreground: #ffffff;
   --color-destructive: #ef4444;
   --color-destructive-foreground: #ffffff;
   --color-border: #e2e8f0;
   --color-input: #e2e8f0;
-  --color-ring: #3b82f6;
+  --color-ring: #466853;
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
   --color-popover: #ffffff;
@@ -26,21 +42,68 @@
 .dark {
   --color-background: #0f172a;
   --color-foreground: #f8fafc;
-  --color-primary: #60a5fa;
+  --color-primary: #5a7c68;
   --color-primary-foreground: #1e293b;
   --color-secondary: #1e293b;
   --color-secondary-foreground: #f8fafc;
   --color-muted: #1e293b;
   --color-muted-foreground: #94a3b8;
-  --color-accent: #1e293b;
+  --color-accent: #8b7165;
   --color-accent-foreground: #f8fafc;
   --color-destructive: #dc2626;
   --color-destructive-foreground: #f8fafc;
   --color-border: #334155;
   --color-input: #334155;
-  --color-ring: #60a5fa;
+  --color-ring: #5a7c68;
   --color-card: #1e293b;
   --color-card-foreground: #f8fafc;
   --color-popover: #1e293b;
   --color-popover-foreground: #f8fafc;
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-10px) rotate(1deg);
+  }
+  66% {
+    transform: translateY(5px) rotate(-1deg);
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(70, 104, 83, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(70, 104, 83, 0.6);
+  }
+}
+
+.tech-icon {
+  animation: float 6s ease-in-out infinite;
+}
+
+.tech-icon:nth-child(2) {
+  animation-delay: -1s;
+}
+.tech-icon:nth-child(3) {
+  animation-delay: -2s;
+}
+.tech-icon:nth-child(4) {
+  animation-delay: -3s;
+}
+.tech-icon:nth-child(5) {
+  animation-delay: -4s;
+}
+.tech-icon:nth-child(6) {
+  animation-delay: -5s;
+}
+
+.profile-image {
+  animation: pulse-glow 3s ease-in-out infinite;
 }

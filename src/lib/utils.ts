@@ -15,9 +15,9 @@ export function generateSlug(text: string): string {
   return text
     .toLowerCase()
     .trim()
-    .replace(/[^\w\s-]/g, "") // Remueve caracteres especiales
-    .replace(/[\s_-]+/g, "-") // Reemplaza espacios y guiones por un solo guión
-    .replace(/^-+|-+$/g, ""); // Remueve guiones al inicio y final
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 }
 
 /**
@@ -61,10 +61,9 @@ export function formatRelativeDate(
  * Calcula el tiempo de lectura estimado
  */
 export function calculateReadTime(content: string): number {
-  const wordsPerMinute = 200; // Promedio de palabras por minuto en español
+  const wordsPerMinute = 200;
   const wordCount = content.trim().split(/\s+/).length;
   const readTime = Math.ceil(wordCount / wordsPerMinute);
-
   return readTime;
 }
 
@@ -73,7 +72,6 @@ export function calculateReadTime(content: string): number {
  */
 export function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
-
   return text.substring(0, maxLength).trim() + "...";
 }
 
