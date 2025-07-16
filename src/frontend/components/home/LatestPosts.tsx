@@ -3,9 +3,9 @@ import Link from "next/link";
 import { BlogCard } from "../blog/BlogCard";
 import { Pagination } from "@/shared/components/ui/Pagination";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
-import type { Post } from "@/types/blog.types";
 import type { PaginationMeta } from "@/types/api.types";
 import { FileText, ArrowRight } from "lucide-react";
+import type { Post } from "@/types";
 
 interface LatestPostsProps {
   posts: Post[];
@@ -56,10 +56,10 @@ export function LatestPosts({
         </div>
 
         {/* Paginación */}
-        {showPagination && pagination && pagination.pages > 1 && (
+        {showPagination && pagination && pagination.totalPages > 1 && (
           <Pagination
             currentPage={pagination.page}
-            totalPages={pagination.pages}
+            totalPages={pagination.totalPages}
             hasNext={pagination.hasNext}
             hasPrev={pagination.hasPrev}
           />

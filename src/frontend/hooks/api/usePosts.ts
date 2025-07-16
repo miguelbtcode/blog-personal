@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { usePostsStore } from "@/frontend/stores/posts.store";
-import type { PostQueryParams } from "@/types/blog.types";
+import { PostFilters } from "@/types";
 
 interface UsePostsOptions {
   enabled?: boolean;
@@ -8,7 +8,7 @@ interface UsePostsOptions {
 }
 
 export function usePosts(
-  filters: PostQueryParams = {},
+  filters: PostFilters = {},
   options: UsePostsOptions = {}
 ) {
   const { enabled = true, refetchOnWindowFocus = false } = options;
@@ -45,7 +45,9 @@ export function usePosts(
   const hasMore = pagination?.hasNext ?? false;
   const isEmpty = posts.length === 0 && !loading && !error;
   const isFirstPage = pagination?.page === 1;
-  const isLastPage = pagination ? pagination.page === pagination.pages : false;
+  const isLastPage = pagination
+    ? pagination.page === pagination.totalPages
+    : false;
 
   return {
     // Data

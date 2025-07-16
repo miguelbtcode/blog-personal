@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { devtools } from "zustand/middleware";
-import { apiService } from "@/frontend/services/api.service";
-import type { Post, PostQueryParams } from "@/types/blog.types";
+import { postService } from "@/frontend/services/posts.service";
 import type { PaginationMeta } from "@/types/api.types";
+import { Post, PostFilters, CreatePostData, UpdatePostData } from "@/types";
 
 interface PostsStore {
   // State
@@ -10,20 +10,20 @@ interface PostsStore {
   pagination: PaginationMeta | null;
   loading: boolean;
   error: string | null;
-  currentFilters: PostQueryParams;
+  currentFilters: PostFilters;
 
   // Actions
   setPosts: (posts: Post[]) => void;
   setPagination: (pagination: PaginationMeta | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
-  setFilters: (filters: PostQueryParams) => void;
+  setFilters: (filters: PostFilters) => void;
 
   // Async actions
-  fetchPosts: (filters?: PostQueryParams) => Promise<void>;
-  createPost: (data: Partial<Post>) => Promise<Post | null>;
-  updatePost: (slug: string, data: Partial<Post>) => Promise<Post | null>;
-  deletePost: (slug: string) => Promise<boolean>;
+  fetchPosts: (filters?: PostFilters) => Promise<void>;
+  createPost: (data: CreatePostData) => Promise<Post | null>;
+  updatePost: (id: string, data: UpdatePostData) => Promise<Post | null>;
+  deletePost: (id: string) => Promise<boolean>;
   clearError: () => void;
 }
 
@@ -51,7 +51,7 @@ export const usePostsStore = create<PostsStore>()(
           const mergedFilters = { ...get().currentFilters, ...filters };
           set({ currentFilters: mergedFilters });
 
-          const response = await apiService.getPosts(mergedFilters);
+          const response = await postService.getPosts(mergedFilters);
 
           console.warn("Fetched posts:", response);
 
@@ -72,10 +72,10 @@ export const usePostsStore = create<PostsStore>()(
         }
       },
 
-      createPost: async (data) => {
+      createPost: async (data: CreatePostData) => {
         try {
           set({ error: null });
-          const response = await apiService.createPost(data);
+          const response = await postService.createPost(data);
 
           if (!response.success || !response.data) {
             throw new Error(response.error || "Error al crear post");
@@ -92,10 +92,10 @@ export const usePostsStore = create<PostsStore>()(
         }
       },
 
-      updatePost: async (slug, data) => {
+      updatePost: async (id: string, data: UpdatePostData) => {
         try {
           set({ error: null });
-          const response = await apiService.updatePost(slug, data);
+          const response = await postService.updatePost(id, data);
 
           if (!response.success || !response.data) {
             throw new Error(response.error || "Error al actualizar post");
@@ -104,7 +104,7 @@ export const usePostsStore = create<PostsStore>()(
           // Update local state
           set((state) => ({
             posts: state.posts.map((post) =>
-              post.slug === slug ? { ...post, ...response.data } : post
+              post.id === id ? { ...post, ...response.data } : post
             ),
           }));
 
@@ -117,10 +117,10 @@ export const usePostsStore = create<PostsStore>()(
         }
       },
 
-      deletePost: async (slug) => {
+      deletePost: async (id: string) => {
         try {
           set({ error: null });
-          const response = await apiService.deletePost(slug);
+          const response = await postService.deletePost(id);
 
           if (!response.success) {
             throw new Error(response.error || "Error al eliminar post");
@@ -128,12 +128,12 @@ export const usePostsStore = create<PostsStore>()(
 
           // Remove from local state
           set((state) => ({
-            posts: state.posts.filter((post) => post.slug !== slug),
+            posts: state.posts.filter((post) => post.id !== id),
             pagination: state.pagination
               ? {
                   ...state.pagination,
                   total: state.pagination.total - 1,
-                  pages: Math.ceil(
+                  totalPages: Math.ceil(
                     (state.pagination.total - 1) / state.pagination.limit
                   ),
                 }

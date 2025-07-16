@@ -82,9 +82,9 @@ export class PostsRepository extends BaseRepository {
 
     if (params.search) {
       where.OR = [
-        { title: { contains: params.search, mode: "insensitive" } },
-        { excerpt: { contains: params.search, mode: "insensitive" } },
-        { content: { contains: params.search, mode: "insensitive" } },
+        { title: { contains: params.search } },
+        { excerpt: { contains: params.search } },
+        { content: { contains: params.search } },
       ];
     }
 
@@ -109,19 +109,45 @@ export class PostsRepository extends BaseRepository {
 
   private getPostIncludes() {
     return {
-      author: { select: { id: true, name: true, image: true, bio: true } },
+      author: {
+        select: {
+          id: true,
+          name: true,
+          image: true,
+          bio: true,
+        },
+      },
       categories: {
         include: {
           category: {
-            select: { id: true, name: true, slug: true, color: true },
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              color: true,
+            },
           },
         },
       },
       tags: {
-        include: { tag: { select: { id: true, name: true, slug: true } } },
+        include: {
+          tag: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            },
+          },
+        },
       },
       _count: {
-        select: { comments: { where: { status: "APPROVED" } } },
+        select: {
+          comments: {
+            where: {
+              status: "APPROVED" as const,
+            },
+          },
+        },
       },
     };
   }

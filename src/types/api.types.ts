@@ -22,11 +22,9 @@ export interface PaginationMeta {
   hasPrev: boolean;
 }
 
-export interface PaginatedResponse<T> {
-  success: boolean;
+export interface PaginatedResponse<T> extends Omit<ApiResponse<T[]>, "data"> {
   data: T[];
   pagination: PaginationMeta;
-  message?: string;
 }
 
 export interface QueryParams {

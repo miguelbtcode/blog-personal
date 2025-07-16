@@ -31,17 +31,15 @@ export type UserWithPosts = User & {
 };
 
 export type PostWithDetails = Post & {
-  author: User;
+  author: Pick<User, "id" | "name" | "image" | "bio">;
   categories: (PostCategory & {
-    category: Category;
+    category: Pick<Category, "id" | "name" | "slug" | "color">;
   })[];
   tags: (PostTag & {
-    tag: Tag;
+    tag: Pick<Tag, "id" | "name" | "slug">;
   })[];
-  comments: Comment[];
-  _count?: {
+  _count: {
     comments: number;
-    views: number;
   };
 };
 

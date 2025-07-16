@@ -11,44 +11,48 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  image     String?
-  bio       String?  @db.Text
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  image         String?
+  password      String?   // Agregado para autenticación con credenciales
+  bio           String?   @db.Text
+  role          Role      @default(USER)
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   // Relations
   posts    Post[]
   comments Comment[]
+  accounts Account[]
+  sessions Session[]
 
   @@map("users")
 }
 
 model Post {
-  id             String     @id @default(cuid())
+  id             String      @id @default(cuid())
   title          String
-  slug           String     @unique
-  excerpt        String?    @db.Text
-  content        String     @db.LongText
+  slug           String      @unique
+  excerpt        String?     @db.Text
+  content        String      @db.LongText
   featuredImage  String?
-  status         PostStatus @default(DRAFT)
-  published      Boolean    @default(false)
+  status         PostStatus  @default(DRAFT)
+  published      Boolean     @default(false)
   publishedAt    DateTime?
-  viewCount      Int        @default(0)
-  readTime       Int? // minutes
+  viewCount      Int         @default(0)
+  readTime       Int? // in minutes
   seoTitle       String?
-  seoDescription String?    @db.Text
+  seoDescription String?     @db.Text
   authorId       String
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   // Relations
   author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   categories PostCategory[]
-  tags       PostTag[]
+  tags       PostTag[]      // Agregado
   comments   Comment[]
 
   @@index([slug])
@@ -58,43 +62,17 @@ model Post {
   @@map("posts")
 }
 
-model Category {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  slug        String   @unique
-  description String?  @db.Text
-  color       String? // hex color
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  // Relations
-  posts PostCategory[]
-
-  @@map("categories")
-}
-
 model Tag {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String    @id @default(cuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
   // Relations
   posts PostTag[]
 
   @@map("tags")
-}
-
-model PostCategory {
-  postId     String
-  categoryId String
-
-  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-
-  @@id([postId, categoryId])
-  @@map("post_categories")
 }
 
 model PostTag {
@@ -106,6 +84,32 @@ model PostTag {
 
   @@id([postId, tagId])
   @@map("post_tags")
+}
+
+model Category {
+  id          String         @id @default(cuid())
+  name        String         @unique
+  slug        String         @unique
+  description String?        @db.Text
+  color       String?        @default("#3B82F6")
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  posts PostCategory[]
+
+  @@map("categories")
+}
+
+model PostCategory {
+  postId     String
+  categoryId String
+
+  post     Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([postId, categoryId])
+  @@map("post_categories")
 }
 
 model Comment {
@@ -131,10 +135,7 @@ model Comment {
   @@map("comments")
 }
 
-// Eliminar tablas de NextAuth
-// Comentar o eliminar estas secciones:
-
-/*
+// NextAuth.js tables
 model Account {
   id                String  @id @default(cuid())
   userId            String
@@ -173,7 +174,6 @@ model VerificationToken {
   @@unique([identifier, token])
   @@map("verification_tokens")
 }
-*/
 
 // Enums
 enum Role {

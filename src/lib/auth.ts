@@ -1,9 +1,8 @@
 import { NextAuthOptions, type DefaultSession } from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-import GitHubProvider from "next-auth/providers/github";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 import type { Role } from "@prisma/client";
 
 // Extender los tipos de NextAuth para incluir el rol del usuario
@@ -32,26 +31,17 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   pages: {
-    signIn: "/auth/signin",
-    signUp: "/auth/signup",
-    error: "/auth/error",
+    signIn: "/admin",
+    error: "/admin?error=CredentialsSignin",
   },
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
-    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
         email: {
           label: "Email",
           type: "email",
-          placeholder: "tu@email.com",
+          placeholder: "admin@example.com",
         },
         password: {
           label: "Contraseña",
@@ -60,23 +50,35 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          throw new Error("Email y contraseña son requeridos");
         }
 
         try {
+          // Buscar usuario por email
           const user = await prisma.user.findUnique({
             where: {
               email: credentials.email,
             },
           });
 
-          if (!user) {
-            return null;
+          if (!user || !user.password) {
+            throw new Error("Credenciales inválidas");
           }
 
-          // Aquí deberías verificar la contraseña con bcrypt
-          // Por ahora, solo verificamos que exista el usuario
-          // En una implementación real, compararías la contraseña hasheada
+          // Verificar contraseña
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
+
+          if (!isPasswordValid) {
+            throw new Error("Credenciales inválidas");
+          }
+
+          // Verificar que sea admin (opcional - se puede quitar si quieres que otros roles accedan)
+          if (user.role !== "ADMIN") {
+            throw new Error("No tienes permisos de administrador");
+          }
 
           return {
             id: user.id,
@@ -86,8 +88,8 @@ export const authOptions: NextAuthOptions = {
             role: user.role,
           };
         } catch (error) {
-          console.error("Error during authentication:", error);
-          return null;
+          console.error("Error durante autenticación:", error);
+          throw new Error("Error de autenticación");
         }
       },
     }),
@@ -106,56 +108,10 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async signIn({ user, account, profile }) {
-      if (!user.email) {
-        return false;
-      }
-
-      // Para proveedores OAuth, crear o actualizar el usuario
-      if (account?.provider === "google" || account?.provider === "github") {
-        try {
-          const existingUser = await prisma.user.findUnique({
-            where: { email: user.email },
-          });
-
-          if (existingUser) {
-            // Actualizar información del usuario si es necesario
-            await prisma.user.update({
-              where: { email: user.email },
-              data: {
-                name: user.name || existingUser.name,
-                image: user.image || existingUser.image,
-              },
-            });
-          } else {
-            // Crear nuevo usuario
-            await prisma.user.create({
-              data: {
-                email: user.email,
-                name: user.name,
-                image: user.image,
-                role: "USER", // Rol por defecto
-              },
-            });
-          }
-          return true;
-        } catch (error) {
-          console.error("Error creating/updating user:", error);
-          return false;
-        }
-      }
-
-      return true;
-    },
   },
   events: {
-    async createUser({ user }) {
-      // Log cuando se crea un nuevo usuario
-      console.log(`New user created: ${user.email}`);
-    },
-    async signIn({ user, account, isNewUser }) {
-      // Log cuando un usuario inicia sesión
-      console.log(`User signed in: ${user.email} via ${account?.provider}`);
+    async signIn({ user, account }) {
+      console.log(`Admin signed in: ${user.email} via ${account?.provider}`);
     },
   },
 };

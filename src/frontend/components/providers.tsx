@@ -10,7 +10,11 @@ interface ProvidersProps {
 
 export function Providers({ children }: ProvidersProps) {
   return (
-    <SessionProvider>
+    <SessionProvider
+      basePath="/api/auth"
+      refetchInterval={5 * 60}
+      refetchOnWindowFocus={true}
+    >
       <ThemeProvider
         attribute="class"
         defaultTheme="system"

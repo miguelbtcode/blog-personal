@@ -1,8 +1,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { CalendarDays, Clock, MessageCircle, Eye } from "lucide-react";
-import type { Post } from "@/types/blog.types";
 import { formatDate } from "@/lib/utils";
+import type { Post, PostWithDetails } from "@/types";
 
 interface BlogCardProps {
   post: Post;
@@ -98,7 +98,7 @@ export function BlogCard({ post }: BlogCardProps) {
 
             <div className="flex items-center">
               <MessageCircle className="w-4 h-4 mr-1" />
-              <span>{post.commentCount || 0}</span>
+              <span>{post._count.comments || 0}</span>
             </div>
           </div>
         </div>

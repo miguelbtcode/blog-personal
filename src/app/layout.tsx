@@ -2,6 +2,7 @@ import "./globals.css";
 import { Inter } from "next/font/google";
 import Header from "@/frontend/components/layout/header";
 import Footer from "@/frontend/components/layout/footer";
+import { Providers } from "@/frontend/components/providers";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -16,16 +17,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="es">
-      <head>
-        <link rel="manifest" href="/manifest.json" />
-      </head>
-      <body className={`${inter.className} m-0 p-0`}>
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-          <Header />
-          <div className="flex-1">{children}</div>
-          <Footer />
-        </div>
+    <html lang="es" suppressHydrationWarning>
+      <body className={`${inter.className}`}>
+        <Providers>
+          {children}
+
+          {/* <div className="min-h-screen bg-gray-50 flex flex-col">
+            <Header />
+            <div className="flex-1">{children}</div>
+            <Footer />
+          </div> */}
+        </Providers>
       </body>
     </html>
   );
