@@ -1,0 +1,156 @@
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { apiService } from "@/frontend/services/api.service";
+import type { Post, PostQueryParams } from "@/shared/types/blog.types";
+import type { PaginationMeta } from "@/shared/types/api.types";
+
+interface PostsStore {
+  // State
+  posts: Post[];
+  pagination: PaginationMeta | null;
+  loading: boolean;
+  error: string | null;
+  currentFilters: PostQueryParams;
+
+  // Actions
+  setPosts: (posts: Post[]) => void;
+  setPagination: (pagination: PaginationMeta | null) => void;
+  setLoading: (loading: boolean) => void;
+  setError: (error: string | null) => void;
+  setFilters: (filters: PostQueryParams) => void;
+
+  // Async actions
+  fetchPosts: (filters?: PostQueryParams) => Promise<void>;
+  createPost: (data: Partial<Post>) => Promise<Post | null>;
+  updatePost: (slug: string, data: Partial<Post>) => Promise<Post | null>;
+  deletePost: (slug: string) => Promise<boolean>;
+  clearError: () => void;
+}
+
+export const usePostsStore = create<PostsStore>()(
+  devtools(
+    (set, get) => ({
+      // Initial state
+      posts: [],
+      pagination: null,
+      loading: false,
+      error: null,
+      currentFilters: {},
+
+      // Setters
+      setPosts: (posts) => set({ posts }),
+      setPagination: (pagination) => set({ pagination }),
+      setLoading: (loading) => set({ loading }),
+      setError: (error) => set({ error }),
+      setFilters: (filters) => set({ currentFilters: filters }),
+
+      // Async actions
+      fetchPosts: async (filters = {}) => {
+        try {
+          set({ loading: true, error: null });
+          const mergedFilters = { ...get().currentFilters, ...filters };
+          set({ currentFilters: mergedFilters });
+
+          const response = await apiService.getPosts(mergedFilters);
+
+          console.warn("Fetched posts:", response);
+
+          if (!response.success || !response.data) {
+            throw new Error(response.error || "Error al cargar posts");
+          }
+
+          set({
+            posts: response.data.items,
+            pagination: response.data.pagination,
+          });
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : "Error desconocido";
+          set({ error: errorMessage });
+        } finally {
+          set({ loading: false });
+        }
+      },
+
+      createPost: async (data) => {
+        try {
+          set({ error: null });
+          const response = await apiService.createPost(data);
+
+          if (!response.success || !response.data) {
+            throw new Error(response.error || "Error al crear post");
+          }
+
+          // Refresh posts
+          await get().fetchPosts();
+          return response.data;
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : "Error al crear post";
+          set({ error: errorMessage });
+          return null;
+        }
+      },
+
+      updatePost: async (slug, data) => {
+        try {
+          set({ error: null });
+          const response = await apiService.updatePost(slug, data);
+
+          if (!response.success || !response.data) {
+            throw new Error(response.error || "Error al actualizar post");
+          }
+
+          // Update local state
+          set((state) => ({
+            posts: state.posts.map((post) =>
+              post.slug === slug ? { ...post, ...response.data } : post
+            ),
+          }));
+
+          return response.data;
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : "Error al actualizar post";
+          set({ error: errorMessage });
+          return null;
+        }
+      },
+
+      deletePost: async (slug) => {
+        try {
+          set({ error: null });
+          const response = await apiService.deletePost(slug);
+
+          if (!response.success) {
+            throw new Error(response.error || "Error al eliminar post");
+          }
+
+          // Remove from local state
+          set((state) => ({
+            posts: state.posts.filter((post) => post.slug !== slug),
+            pagination: state.pagination
+              ? {
+                  ...state.pagination,
+                  total: state.pagination.total - 1,
+                  pages: Math.ceil(
+                    (state.pagination.total - 1) / state.pagination.limit
+                  ),
+                }
+              : null,
+          }));
+
+          return true;
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : "Error al eliminar post";
+          set({ error: errorMessage });
+          return false;
+        }
+      },
+
+      clearError: () => set({ error: null }),
+    }),
+    { name: "posts-store" }
+  )
+);
