@@ -10,6 +10,7 @@ import type {
   PostCategory,
   PostTag,
 } from "@prisma/client";
+import { PostContent } from "./content";
 
 // Re-export Prisma types
 export type {
@@ -85,4 +86,18 @@ export type CommentWithAuthor = Comment & {
 export type CommentWithReplies = Comment & {
   author: User | null;
   replies: CommentWithAuthor[];
+};
+
+export type PostWithStructuredContent = Omit<Post, "content"> & {
+  content: PostContent;
+  author: Pick<User, "id" | "name" | "image" | "bio">;
+  categories: (PostCategory & {
+    category: Pick<Category, "id" | "name" | "slug" | "color">;
+  })[];
+  tags: (PostTag & {
+    tag: Pick<Tag, "id" | "name" | "slug">;
+  })[];
+  _count: {
+    comments: number;
+  };
 };

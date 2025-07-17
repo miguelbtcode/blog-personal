@@ -1,5 +1,5 @@
-import Footer from "@/frontend/components/layout/footer";
-import Header from "@/frontend/components/layout/header";
+import Footer from "@/frontend/components/layout/blog/footer";
+import Header from "@/frontend/components/layout/blog/header";
 
 export default function BlogLayout({
   children,

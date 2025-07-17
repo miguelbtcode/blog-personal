@@ -36,7 +36,7 @@ model Post {
   title          String
   slug           String      @unique
   excerpt        String?     @db.Text
-  content        String      @db.LongText
+  content        Json
   featuredImage  String?
   status         PostStatus  @default(DRAFT)
   published      Boolean     @default(false)
@@ -52,7 +52,7 @@ model Post {
   // Relations
   author     User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
   categories PostCategory[]
-  tags       PostTag[]      // Agregado
+  tags       PostTag[]
   comments   Comment[]
 
   @@index([slug])

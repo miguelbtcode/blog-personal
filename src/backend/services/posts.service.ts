@@ -1,10 +1,6 @@
 import { PostsRepository } from "../repositories/posts.repository";
 import { generateSlug, calculateReadTime } from "@/lib/utils";
-import type {
-  PostQueryParams,
-  CreatePostData,
-  UpdatePostData,
-} from "@/backend/validators/posts.validator";
+import { CreatePostData } from "@/types";
 
 export class PostsService {
   private postsRepo = new PostsRepository();

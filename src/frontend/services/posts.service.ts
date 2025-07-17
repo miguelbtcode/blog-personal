@@ -1,14 +1,12 @@
 import {
   ApiResponse,
+  CreatePostData,
   PaginatedResponse,
   PaginationMeta,
   PostWithDetails,
+  UpdatePostData,
 } from "@/types";
 import { apiService } from "./api.service";
-import {
-  CreatePostData,
-  UpdatePostData,
-} from "@/backend/validators/posts.validator";
 
 export class PostService {
   /**
@@ -52,6 +50,7 @@ export class PostService {
     success: boolean;
     data: PostWithDetails;
   }> {
+    console.warn("Creating post with data:", data);
     return apiService.request("/posts", {
       method: "POST",
       body: JSON.stringify(data),

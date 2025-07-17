@@ -107,3 +107,8 @@ body {
 .profile-image {
   animation: pulse-glow 3s ease-in-out infinite;
 }
+
+/* Agregrar al final de tu globals.css */
+.transition-colors {
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
+}

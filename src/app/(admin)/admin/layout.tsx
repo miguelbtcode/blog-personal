@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminHeader } from "@/frontend/components/layout/admin/header";
 import { useSession } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect } from "react";
@@ -49,5 +50,10 @@ export default function AdminLayout({
     );
   }
 
-  return <div className="min-h-screen bg-gray-900">{children}</div>;
+  return (
+    <div className="min-h-screen bg-background transition-colors duration-200">
+      <AdminHeader />
+      <main>{children}</main>
+    </div>
+  );
 }

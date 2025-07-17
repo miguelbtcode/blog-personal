@@ -1,12 +1,13 @@
 import { NextRequest } from "next/server";
 import { PostsService } from "../services/posts.service";
 import { createResponse } from "../utils/response";
+import { PostStatus } from "@/shared/enums";
 import {
   createPostSchema,
-  updatePostSchema,
   postFiltersSchema,
-} from "@/lib/validations";
-import { PostStatus } from "@/shared/enums";
+  updatePostSchema,
+} from "@/shared/schemas";
+import { validateRequest } from "../middleware/validation";
 
 export class PostsController {
   private postsService = new PostsService();
@@ -38,26 +39,16 @@ export class PostsController {
     }
   }
 
+  //* Implementar lógica de creación de post
+  //TODO: Implementar la logica de subida de imagenes a cloudinary y guardar la url en la base de datos
+  //TODO: Implementar la logica y control de validaciones de campos si algo no es valido
   async createPost(request: NextRequest) {
-    try {
-      const body = await request.json();
-      const validatedData = createPostSchema.parse(body);
-
-      const authorId = body.authorId || "default-author-id";
-
-      const postData = {
-        ...validatedData,
-        authorId,
-        status: validatedData.status as PostStatus,
-      };
-
-      const post = await this.postsService.createPost(postData);
-      return createResponse.success(post, "Post creado exitosamente", 201);
-    } catch (error) {
-      return createResponse.error(error);
-    }
+    const data = await validateRequest(createPostSchema)(request);
+    const post = await this.postsService.createPost(data);
+    return createResponse.success(post, "Post creado exitosamente", 201);
   }
 
+  //TODO: Implementar lógica de actualización de post
   async updatePost(
     request: NextRequest,
     { params }: { params: { id: string } }
@@ -73,6 +64,7 @@ export class PostsController {
     }
   }
 
+  //TODO: Implementar lógica de eliminación de post
   async deletePost(
     request: NextRequest,
     { params }: { params: { id: string } }
