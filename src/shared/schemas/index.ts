@@ -1,9 +1,6 @@
 // Shared schemas
 export * from "./shared.schemas";
 
-// Post schemas
-export * from "./post.schemas";
-
 // Category schemas
 export * from "./category.schemas";
 

@@ -2,18 +2,24 @@ import { create } from "zustand";
 import { devtools } from "zustand/middleware";
 import { postService } from "@/frontend/services/posts.service";
 import type { PaginationMeta } from "@/types/api.types";
-import { Post, PostFilters, CreatePostData, UpdatePostData } from "@/types";
+import {
+  Post,
+  PostFilters,
+  CreatePostData,
+  UpdatePostData,
+  PostWithDetails,
+} from "@/types";
 
 interface PostsStore {
   // State
-  posts: Post[];
+  posts: PostWithDetails[];
   pagination: PaginationMeta | null;
   loading: boolean;
   error: string | null;
   currentFilters: PostFilters;
 
   // Actions
-  setPosts: (posts: Post[]) => void;
+  setPosts: (posts: PostWithDetails[]) => void;
   setPagination: (pagination: PaginationMeta | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -50,6 +56,8 @@ export const usePostsStore = create<PostsStore>()(
           set({ loading: true, error: null });
           const mergedFilters = { ...get().currentFilters, ...filters };
           set({ currentFilters: mergedFilters });
+
+          console.log("Fetching posts with filters:", mergedFilters);
 
           const response = await postService.getPosts(mergedFilters);
 

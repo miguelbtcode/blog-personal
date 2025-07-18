@@ -5,12 +5,12 @@ import { BlogCard } from "./BlogCard";
 import { LoadingGrid } from "@/shared/components/ui/LoadingGrid";
 import { ErrorMessage } from "@/shared/components/ui/ErrorMessage";
 import { Pagination } from "@/shared/components/ui/Pagination";
-import type { PostQueryParams } from "@/types/blog.types";
 import { FileText } from "lucide-react";
 import { EmptyState } from "@/shared/components/ui/EmptyState";
+import { PostFilters } from "@/types";
 
 interface BlogGridProps {
-  filters: PostQueryParams;
+  filters: PostFilters;
 }
 
 export function BlogGrid({ filters }: BlogGridProps) {
@@ -39,10 +39,10 @@ export function BlogGrid({ filters }: BlogGridProps) {
         ))}
       </div>
 
-      {pagination && pagination.pages > 1 && (
+      {pagination && pagination.totalPages > 1 && (
         <Pagination
           currentPage={pagination.page}
-          totalPages={pagination.pages}
+          totalPages={pagination.totalPages}
           hasNext={pagination.hasNext}
           hasPrev={pagination.hasPrev}
         />

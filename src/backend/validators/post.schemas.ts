@@ -1,10 +1,9 @@
 import { z } from "zod";
 import {
   idSchema,
-  slugSchema,
   paginationSchema,
   sortOrderSchema,
-} from "./shared.schemas";
+} from "../../shared/schemas/shared.schemas";
 import { PostStatus } from "@/shared/enums";
 
 export const postStatusSchema = z.nativeEnum(PostStatus).optional();
@@ -48,16 +47,17 @@ export const updatePostSchema = createPostSchema.partial().extend({
 });
 
 export const postFiltersSchema = paginationSchema.extend({
-  status: postStatusSchema.optional(),
-  categoryId: idSchema.optional(),
-  tagId: idSchema.optional(),
-  authorId: idSchema.optional(),
+  status: postStatusSchema.optional().default(PostStatus.PUBLISHED),
+  category: idSchema.optional(),
+  tag: idSchema.optional(),
   search: z.string().optional(),
-  featured: z.coerce.boolean().optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+
+  // Sorting
   sortBy: z
     .enum(["createdAt", "updatedAt", "publishedAt", "title", "viewCount"])
     .default("createdAt"),
   sortOrder: sortOrderSchema,
 });
+
+// Tipos inferidos
+export type PostFiltersSchema = z.infer<typeof postFiltersSchema>;

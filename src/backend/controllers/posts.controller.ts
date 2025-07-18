@@ -1,17 +1,13 @@
 import { NextRequest } from "next/server";
 import { PostsService } from "../services/posts.service";
 import { createResponse } from "../utils/response";
-import { PostStatus } from "@/shared/enums";
-import {
-  createPostSchema,
-  postFiltersSchema,
-  updatePostSchema,
-} from "@/shared/schemas";
 import { validateRequest } from "../middleware/validation";
+import { postFiltersSchema } from "../validators";
 
 export class PostsController {
   private postsService = new PostsService();
 
+  //* Done
   async getPosts(request: NextRequest) {
     try {
       const { searchParams } = new URL(request.url);
@@ -30,6 +26,7 @@ export class PostsController {
     }
   }
 
+  //TODO: Pending
   async getPost(slug: string) {
     try {
       const post = await this.postsService.getPostBySlug(slug);

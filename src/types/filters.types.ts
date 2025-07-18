@@ -1,15 +1,10 @@
-import type { PostStatus, CommentStatus } from "./database.types";
+import { CommentStatus, PostStatus } from "@prisma/client";
 import type { QueryParams } from "./api.types";
 
 export interface PostFilters extends QueryParams {
+  category?: string;
+  tag?: string;
   status?: PostStatus;
-  categoryId?: string;
-  tagId?: string;
-  authorId?: string;
-  featured?: boolean;
-  startDate?: string;
-  endDate?: string;
-  sortBy?: "createdAt" | "updatedAt" | "publishedAt" | "title" | "viewCount";
 }
 
 export interface CommentFilters extends QueryParams {

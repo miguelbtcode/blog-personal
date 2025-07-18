@@ -5,7 +5,7 @@ import { formatDate } from "@/lib/utils";
 import type { Post, PostWithDetails } from "@/types";
 
 interface BlogCardProps {
-  post: Post;
+  post: PostWithDetails;
 }
 
 export function BlogCard({ post }: BlogCardProps) {
@@ -28,12 +28,14 @@ export function BlogCard({ post }: BlogCardProps) {
           <div className="flex flex-wrap gap-2 mb-3">
             {post.categories.map((category) => (
               <Link
-                key={category.id}
-                href={`/blog?category=${category.slug}`}
+                key={category.category.id}
+                href={`/blog?category=${category.category.slug}`}
                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium text-white"
-                style={{ backgroundColor: category.color || "#6366f1" }}
+                style={{
+                  backgroundColor: category.category.color || "#6366f1",
+                }}
               >
-                {category.name}
+                {category.category.name}
               </Link>
             ))}
           </div>

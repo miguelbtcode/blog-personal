@@ -1,9 +1,10 @@
+import { PostFiltersSchema } from "../validators";
 import { BaseRepository } from "./base.repository";
-import type { PostQueryParams } from "@/backend/validators/posts.validator";
 import { PostStatus } from "@/shared/enums";
 
 export class PostsRepository extends BaseRepository {
-  async findMany(params: PostQueryParams) {
+  //* Done
+  async findMany(params: PostFiltersSchema) {
     const where = this.buildWhereClause(params);
     const skip = ((params.page || 1) - 1) * (params.limit || 10);
     const take = params.limit || 10;
@@ -28,6 +29,7 @@ export class PostsRepository extends BaseRepository {
     };
   }
 
+  //TODO: Pending
   async findBySlug(slug: string) {
     return this.db.post.findUnique({
       where: { slug },
@@ -70,7 +72,7 @@ export class PostsRepository extends BaseRepository {
     });
   }
 
-  private buildWhereClause(params: PostQueryParams) {
+  private buildWhereClause(params: PostFiltersSchema) {
     const where: any = {};
 
     if (params.status) {

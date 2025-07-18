@@ -1,11 +1,12 @@
 import { PostsRepository } from "../repositories/posts.repository";
 import { generateSlug, calculateReadTime } from "@/lib/utils";
-import { CreatePostData } from "@/types";
+import { CreatePostData, UpdatePostData } from "@/types";
+import { PostFiltersSchema } from "../validators";
 
 export class PostsService {
   private postsRepo = new PostsRepository();
 
-  async getPosts(params: PostQueryParams) {
+  async getPosts(params: PostFiltersSchema) {
     return this.postsRepo.findMany(params);
   }
 
