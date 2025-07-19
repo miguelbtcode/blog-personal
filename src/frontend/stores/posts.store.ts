@@ -13,6 +13,7 @@ import {
 interface PostsStore {
   // State
   posts: PostWithDetails[];
+  currentPost: PostWithDetails | null; // ← Agregado para post actual
   pagination: PaginationMeta | null;
   loading: boolean;
   error: string | null;
@@ -20,6 +21,7 @@ interface PostsStore {
 
   // Actions
   setPosts: (posts: PostWithDetails[]) => void;
+  setCurrentPost: (post: PostWithDetails | null) => void; // ← Agregado
   setPagination: (pagination: PaginationMeta | null) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
@@ -27,6 +29,7 @@ interface PostsStore {
 
   // Async actions
   fetchPosts: (filters?: PostFilters) => Promise<void>;
+  getPost: (id: string) => Promise<PostWithDetails | null>; // ← Agregado
   createPost: (data: CreatePostData) => Promise<Post | null>;
   updatePost: (id: string, data: UpdatePostData) => Promise<Post | null>;
   deletePost: (id: string) => Promise<boolean>;
@@ -38,6 +41,7 @@ export const usePostsStore = create<PostsStore>()(
     (set, get) => ({
       // Initial state
       posts: [],
+      currentPost: null, // ← Agregado
       pagination: null,
       loading: false,
       error: null,
@@ -45,6 +49,7 @@ export const usePostsStore = create<PostsStore>()(
 
       // Setters
       setPosts: (posts) => set({ posts }),
+      setCurrentPost: (post) => set({ currentPost: post }), // ← Agregado
       setPagination: (pagination) => set({ pagination }),
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
@@ -80,6 +85,33 @@ export const usePostsStore = create<PostsStore>()(
         }
       },
 
+      // ← MÉTODO AGREGADO
+      getPost: async (id: string) => {
+        try {
+          set({ loading: true, error: null });
+
+          console.log("Fetching post with id:", id);
+
+          const response = await postService.getPost(id);
+
+          if (!response.success || !response.data) {
+            throw new Error(response.error || "Post no encontrado");
+          }
+
+          console.log("Fetched post:", response.data);
+
+          set({ currentPost: response.data });
+          return response.data;
+        } catch (err) {
+          const errorMessage =
+            err instanceof Error ? err.message : "Error al cargar post";
+          set({ error: errorMessage });
+          return null;
+        } finally {
+          set({ loading: false });
+        }
+      },
+
       createPost: async (data: CreatePostData) => {
         try {
           set({ error: null });
@@ -88,6 +120,8 @@ export const usePostsStore = create<PostsStore>()(
           if (!response.success || !response.data) {
             throw new Error(response.error || "Error al crear post");
           }
+
+          console.warn("Created post:", response.data);
 
           // Refresh posts
           await get().fetchPosts();
@@ -114,6 +148,11 @@ export const usePostsStore = create<PostsStore>()(
             posts: state.posts.map((post) =>
               post.id === id ? { ...post, ...response.data } : post
             ),
+            // También actualizar currentPost si es el mismo
+            currentPost:
+              state.currentPost?.id === id
+                ? { ...state.currentPost, ...response.data }
+                : state.currentPost,
           }));
 
           return response.data;
@@ -137,6 +176,8 @@ export const usePostsStore = create<PostsStore>()(
           // Remove from local state
           set((state) => ({
             posts: state.posts.filter((post) => post.id !== id),
+            currentPost:
+              state.currentPost?.id === id ? null : state.currentPost, // ← Limpiar si es el actual
             pagination: state.pagination
               ? {
                   ...state.pagination,

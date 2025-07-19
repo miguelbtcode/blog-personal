@@ -19,6 +19,7 @@ export function usePosts(
     loading,
     error,
     fetchPosts,
+    getPost,
     createPost,
     updatePost,
     deletePost,
@@ -60,6 +61,7 @@ export function usePosts(
 
     // Actions
     refetch: () => fetchPosts(filters),
+    getPost,
     createPost,
     updatePost,
     deletePost,

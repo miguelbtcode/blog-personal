@@ -9,15 +9,18 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Genera un slug a partir de un string
+ * Generar slug a partir de un título
  */
-export function generateSlug(text: string): string {
-  return text
+export function generateSlug(title: string): string {
+  return title
     .toLowerCase()
+    .normalize("NFD") // Normalizar caracteres Unicode
+    .replace(/[\u0300-\u036f]/g, "") // Quitar acentos
+    .replace(/[^a-z0-9\s-]/g, "") // Solo letras, números, espacios y guiones
+    .replace(/\s+/g, "-") // Espacios a guiones
+    .replace(/-+/g, "-") // Múltiples guiones a uno
     .trim()
-    .replace(/[^\w\s-]/g, "")
-    .replace(/[\s_-]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+    .slice(0, 60); // Limitar longitud
 }
 
 /**
@@ -58,13 +61,63 @@ export function formatRelativeDate(
 }
 
 /**
- * Calcula el tiempo de lectura estimado
+ * Calcular tiempo de lectura estimado basado en el contenido
  */
-export function calculateReadTime(content: string): number {
-  const wordsPerMinute = 200;
-  const wordCount = content.trim().split(/\s+/).length;
+export function calculateReadTime(content: any): number {
+  if (!content || typeof content !== "object") {
+    return 1;
+  }
+
+  const wordsPerMinute = 200; // Promedio de lectura
+  const wordCount = extractWordCount(content);
+
   const readTime = Math.ceil(wordCount / wordsPerMinute);
-  return readTime;
+  return Math.max(1, readTime); // Mínimo 1 minuto
+}
+
+/**
+ * Extraer número de palabras del contenido estructurado
+ */
+function extractWordCount(content: any): number {
+  if (!content || !content.content) {
+    return 0;
+  }
+
+  let wordCount = 0;
+
+  function traverseContent(node: any) {
+    if (node.type === "text" && node.text) {
+      // Contar palabras en texto
+      const words = node.text
+        .trim()
+        .split(/\s+/)
+        .filter((word: string) => word.length > 0);
+      wordCount += words.length;
+    }
+
+    if (node.content && Array.isArray(node.content)) {
+      node.content.forEach(traverseContent);
+    }
+
+    // Manejar casos especiales
+    if (node.type === "heading" && node.attrs?.level) {
+      // Los títulos cuentan como más palabras por su importancia visual
+      wordCount += 2;
+    }
+
+    if (node.type === "codeBlock") {
+      // Código se lee más lento
+      wordCount += 10;
+    }
+
+    if (node.type === "image") {
+      // Las imágenes toman tiempo de procesamiento
+      wordCount += 5;
+    }
+  }
+
+  traverseContent(content);
+  return wordCount;
 }
 
 /**
@@ -304,4 +357,111 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     document.body.removeChild(textArea);
     return success;
   }
+}
+
+/**
+ * Truncar texto manteniendo palabras completas
+ */
+export function truncateText(text: string, maxLength: number): string {
+  if (text.length <= maxLength) {
+    return text;
+  }
+
+  const truncated = text.slice(0, maxLength);
+  const lastSpaceIndex = truncated.lastIndexOf(" ");
+
+  if (lastSpaceIndex > 0) {
+    return truncated.slice(0, lastSpaceIndex) + "...";
+  }
+
+  return truncated + "...";
+}
+
+/**
+ * Extraer texto plano del contenido estructurado para excerpts
+ */
+export function extractPlainText(
+  content: any,
+  maxLength: number = 300
+): string {
+  if (!content || !content.content) {
+    return "";
+  }
+
+  let plainText = "";
+
+  function traverseContent(node: any) {
+    if (node.type === "text" && node.text) {
+      plainText += node.text + " ";
+    }
+
+    if (node.content && Array.isArray(node.content)) {
+      node.content.forEach(traverseContent);
+    }
+
+    // Agregar espacios después de ciertos elementos
+    if (["paragraph", "heading"].includes(node.type)) {
+      plainText += " ";
+    }
+  }
+
+  traverseContent(content);
+
+  // Limpiar y truncar
+  const cleaned = plainText
+    .replace(/\s+/g, " ") // Múltiples espacios a uno
+    .trim();
+
+  return truncateText(cleaned, maxLength);
+}
+
+/**
+ * Validar y limpiar slug
+ */
+export function validateSlug(slug: string): boolean {
+  const slugRegex = /^[a-z0-9-]+$/;
+  return slugRegex.test(slug) && !slug.startsWith("-") && !slug.endsWith("-");
+}
+
+/**
+ * Formatear fecha para mostrar
+ */
+export function formatPostDate(date: Date | string): string {
+  const postDate = new Date(date);
+  const now = new Date();
+  const diffInHours = Math.floor(
+    (now.getTime() - postDate.getTime()) / (1000 * 60 * 60)
+  );
+
+  if (diffInHours < 1) {
+    return "Hace menos de una hora";
+  } else if (diffInHours < 24) {
+    return `Hace ${diffInHours} hora${diffInHours > 1 ? "s" : ""}`;
+  } else if (diffInHours < 168) {
+    // 7 días
+    const days = Math.floor(diffInHours / 24);
+    return `Hace ${days} día${days > 1 ? "s" : ""}`;
+  } else {
+    return postDate.toLocaleDateString("es-ES", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }
+}
+
+/**
+ * Generar meta description desde contenido
+ */
+export function generateMetaDescription(
+  content: any,
+  fallbackExcerpt?: string
+): string {
+  const extracted = extractPlainText(content, 160);
+
+  if (extracted.length > 50) {
+    return extracted;
+  }
+
+  return fallbackExcerpt || "Lee este interesante artículo en nuestro blog.";
 }

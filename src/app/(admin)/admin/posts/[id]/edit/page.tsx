@@ -1,19 +1,40 @@
-// app/(admin)/admin/posts/create/page.tsx
 "use client";
 
-import { useCreatePostForm } from "@/frontend/hooks/ui/useCreatePostForm";
+import { use, useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 // Componentes específicos
+import { FeaturedImageUpload } from "@/frontend/components/admin/FeaturedImageUpload";
+import { useCreatePostForm } from "@/frontend/hooks/ui/useCreatePostForm";
 import { DraftRecoveryDialog } from "@/frontend/components/admin/posts/create/DraftRecoveryDialog";
 import { PostHeaderBar } from "@/frontend/components/admin/posts/create/PostHeaderBar";
 import { PostBasicInfoForm } from "@/frontend/components/admin/posts/create/PostBasicInfoForm";
 import { PostContentEditor } from "@/frontend/components/admin/posts/create/PostContentEditor";
 import { PostSettingsPanel } from "@/frontend/components/admin/posts/create/PostSettingsPanel";
-import { FeaturedImageUpload } from "@/frontend/components/admin/FeaturedImageUpload";
 import { PostSidebarInfo } from "@/frontend/components/admin/posts/create/PostSidebarInfo";
+import { usePostsStore } from "@/frontend/stores/posts.store";
+import { DraftFormData, useDraftStore } from "@/frontend/stores/draft.store";
+import { isPostContent } from "@/lib/blockUtils";
 
-export default function CreatePostPage() {
-  // Toda la lógica abstraída en el hook
+interface EditPostPageProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default function EditPostPage({ params }: EditPostPageProps) {
+  const router = useRouter();
+
+  // Usar React.use() para unwrap los params
+  const { id } = use(params);
+
+  // Store para obtener el post
+  const { getPost, currentPost, loading: postLoading, error } = usePostsStore();
+
+  // Store para manejar el draft
+  const { setFormData } = useDraftStore();
+
+  // Hook del formulario (reutilizando el mismo)
   const {
     // Estado del formulario
     formData,
@@ -34,7 +55,7 @@ export default function CreatePostPage() {
     handleContentChange,
     handleStatusChange,
 
-    // Handlers de acciones
+    // Handlers de acciones (modificados para edición)
     handleBack,
     handleCancel,
     handleSaveDraft,
@@ -43,6 +64,69 @@ export default function CreatePostPage() {
     // Estado computado
     canPublish,
   } = useCreatePostForm();
+
+  // Cargar post existente al montar
+  useEffect(() => {
+    const loadPost = async () => {
+      try {
+        console.log("Cargando post con ID:", id);
+        const post = await getPost(id);
+        if (post) {
+          console.log("Post cargado exitosamente:", post);
+
+          const postFormData: DraftFormData = {
+            title: post.title,
+            excerpt: post.excerpt || "",
+            featuredImage: post.featuredImage || "",
+            content: isPostContent(post.content)
+              ? post.content
+              : { blocks: [], version: "1.0" },
+            status: post.status as "DRAFT" | "PUBLISHED",
+          };
+
+          setFormData(postFormData);
+        }
+      } catch (error) {
+        console.error("Error cargando post:", error);
+        router.push("/admin/posts");
+      }
+    };
+
+    if (id) {
+      loadPost();
+    }
+  }, [id, getPost, setFormData, router]);
+
+  // Mostrar loading mientras carga el post
+  if (postLoading && !currentPost) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Cargando post...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar error si no se pudo cargar
+  if (error && !currentPost) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-destructive mb-4">
+            Error al cargar el post: {error}
+          </p>
+          <button
+            onClick={() => router.push("/admin/posts")}
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+          >
+            Volver a Posts
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -53,7 +137,7 @@ export default function CreatePostPage() {
         onDiscardDraft={handleDiscardDraft}
       />
 
-      {/* Barra de header con acciones */}
+      {/* Barra de header con acciones - Modificada para edición */}
       <PostHeaderBar
         title={formData.title}
         hasUnsavedChanges={hasUnsavedChanges}

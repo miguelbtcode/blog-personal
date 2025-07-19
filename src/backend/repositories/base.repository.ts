@@ -10,14 +10,14 @@ export abstract class BaseRepository {
   ): PaginationMeta {
     const page = params.page || 1;
     const limit = params.limit || 10;
-    const pages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / limit);
 
     return {
       page,
       limit,
       total,
-      pages,
-      hasNext: page < pages,
+      totalPages,
+      hasNext: page < totalPages,
       hasPrev: page > 1,
     };
   }

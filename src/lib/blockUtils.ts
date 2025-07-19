@@ -1,5 +1,6 @@
 import { nanoid } from "nanoid";
 import type { ContentBlock, BlockType, PostContent } from "@/types/content";
+import { JsonValue } from "@prisma/client/runtime/library";
 
 export function createEmptyBlock(type: BlockType): ContentBlock {
   const id = nanoid();
@@ -63,5 +64,17 @@ export function validatePostContent(content: any): content is PostContent {
     typeof content === "object" &&
     Array.isArray(content.blocks) &&
     typeof content.version === "string"
+  );
+}
+
+export function isPostContent(
+  value: JsonValue
+): value is PostContent & JsonValue {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "blocks" in value &&
+    "version" in value &&
+    Array.isArray((value as any).blocks)
   );
 }

@@ -1,7 +1,6 @@
 import {
   ApiResponse,
   CreatePostData,
-  PaginatedResponse,
   PaginationMeta,
   PostWithDetails,
   UpdatePostData,
@@ -34,7 +33,18 @@ export class PostService {
   }
 
   /**
-   * Obtiene un post por slug con detalles completos
+   * Obtiene un post por ID (para edición/admin) - SIN incrementar vistas
+   */
+  async getPost(id: string): Promise<{
+    success: boolean;
+    data: PostWithDetails;
+    error?: string | undefined;
+  }> {
+    return apiService.request(`/posts/${id}`);
+  }
+
+  /**
+   * Obtiene un post por slug con detalles completos (para blog público) - Incrementa vistas
    */
   async getPostBySlug(slug: string): Promise<{
     success: boolean;
@@ -58,29 +68,29 @@ export class PostService {
   }
 
   /**
-   * Actualiza un post existente
+   * Actualiza un post existente por ID
    */
   async updatePost(
-    slug: string,
+    id: string,
     data: UpdatePostData
   ): Promise<{
     success: boolean;
     data: PostWithDetails;
   }> {
-    return apiService.request(`/posts/${slug}`, {
+    return apiService.request(`/posts/${id}`, {
       method: "PUT",
       body: JSON.stringify(data),
     });
   }
 
   /**
-   * Elimina un post
+   * Elimina un post por ID
    */
-  async deletePost(slug: string): Promise<{
+  async deletePost(id: string): Promise<{
     success: boolean;
     data: null;
   }> {
-    return apiService.request(`/posts/${slug}`, {
+    return apiService.request(`/posts/${id}`, {
       method: "DELETE",
     });
   }

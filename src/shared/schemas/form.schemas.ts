@@ -40,7 +40,6 @@ export const uploadImageSchema = z.object({
     ),
 
   alt: z.string().max(200, "El texto alternativo es muy largo").optional(),
-
   caption: z.string().max(500, "El pie de foto es muy largo").optional(),
 });
 

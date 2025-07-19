@@ -15,3 +15,9 @@ export * from "./user.schemas";
 
 // Form schemas
 export * from "./form.schemas";
+
+// Post schemas
+export * from "./post.schemas";
+
+// Upload schemas
+export * from "./upload.schemas";

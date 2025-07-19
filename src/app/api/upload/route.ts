@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { fileValidationSchema } from "@/shared/schemas";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,13 +21,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Por ahora retorna una URL ficticia
-    // TODO: Implementar Cloudinary u otro servicio
-    const mockUrl = `https://via.placeholder.com/800x400?text=${encodeURIComponent(
-      file.name
-    )}`;
+    const validation = fileValidationSchema.safeParse({
+      size: file.size,
+      type: file.type,
+      name: file.name,
+    });
 
-    return NextResponse.json({ url: mockUrl });
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: validation.error.issues[0]?.message },
+        { status: 400 }
+      );
+    }
+
+    const result = await uploadToCloudinary(file, "blog/featured");
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        url: result.url,
+        publicId: result.publicId,
+      },
+      message: "Imagen subida exitosamente",
+    });
   } catch (error) {
     console.error("Error uploading file:", error);
     return NextResponse.json(
