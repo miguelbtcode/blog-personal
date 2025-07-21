@@ -1,10 +1,12 @@
+import { ApiResponse } from "@/types";
+
 class ApiService {
   private readonly baseURL = "/api";
 
   public async request<T>(
     endpoint: string,
     options: RequestInit = {}
-  ): Promise<T> {
+  ): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
 
     const config: RequestInit = {
@@ -23,7 +25,7 @@ class ApiService {
         throw new Error(errorData.message || `HTTP Error: ${response.status}`);
       }
 
-      return response.json();
+      return response.json() as Promise<ApiResponse<T>>;
     } catch (error) {
       console.error(`API Error (${endpoint}):`, error);
       throw error;

@@ -2,7 +2,8 @@
 
 import { SessionProvider } from "next-auth/react";
 import { ThemeProvider } from "next-themes";
-import { Toaster, ToastProvider } from "./ui/Toast";
+import { Toaster, ToastProvider } from "../ui/Toast";
+import { QueryProvider } from "./QueryProvider";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -22,7 +23,7 @@ export function Providers({ children }: ProvidersProps) {
         disableTransitionOnChange
       >
         <ToastProvider>
-          {children}
+          <QueryProvider>{children}</QueryProvider>
           <Toaster />
         </ToastProvider>
       </ThemeProvider>

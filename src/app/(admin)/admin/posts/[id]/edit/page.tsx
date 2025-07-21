@@ -12,9 +12,11 @@ import { PostBasicInfoForm } from "@/frontend/components/admin/posts/create/Post
 import { PostContentEditor } from "@/frontend/components/admin/posts/create/PostContentEditor";
 import { PostSettingsPanel } from "@/frontend/components/admin/posts/create/PostSettingsPanel";
 import { PostSidebarInfo } from "@/frontend/components/admin/posts/create/PostSidebarInfo";
-import { usePostsStore } from "@/frontend/stores/posts.store";
 import { DraftFormData, useDraftStore } from "@/frontend/stores/draft.store";
 import { isPostContent } from "@/lib/blockUtils";
+import { useToast } from "@/frontend/components/ui/Toast";
+import { usePerformanceMonitor } from "@/frontend/hooks/api/usePerformanceMonitor";
+import { usePost, useUpdatePost } from "@/frontend/hooks/api/usePosts";
 
 interface EditPostPageProps {
   params: Promise<{
@@ -24,17 +26,26 @@ interface EditPostPageProps {
 
 export default function EditPostPage({ params }: EditPostPageProps) {
   const router = useRouter();
+  const { toast } = useToast();
+  const { renderCount, recordMetric } = usePerformanceMonitor("EditPostPage");
 
-  // Usar React.use() para unwrap los params
+  // Unwrap params
   const { id } = use(params);
 
-  // Store para obtener el post
-  const { getPost, currentPost, loading: postLoading, error } = usePostsStore();
+  // React Query hooks para obtener y actualizar post
+  const {
+    data: postData,
+    isLoading: postLoading,
+    error: postError,
+    isError,
+  } = usePost(id);
+
+  const updatePost = useUpdatePost();
 
   // Store para manejar el draft
-  const { setFormData } = useDraftStore();
+  const { setFormData, formData: draftFormData } = useDraftStore();
 
-  // Hook del formulario (reutilizando el mismo)
+  // Hook del formulario modificado para edición
   const {
     // Estado del formulario
     formData,
@@ -55,50 +66,119 @@ export default function EditPostPage({ params }: EditPostPageProps) {
     handleContentChange,
     handleStatusChange,
 
-    // Handlers de acciones (modificados para edición)
+    // Handlers de acciones modificados
     handleBack,
     handleCancel,
-    handleSaveDraft,
-    handlePublish,
 
     // Estado computado
     canPublish,
   } = useCreatePostForm();
 
-  // Cargar post existente al montar
+  // Cargar datos del post cuando esté disponible
   useEffect(() => {
-    const loadPost = async () => {
-      try {
-        console.log("Cargando post con ID:", id);
-        const post = await getPost(id);
-        if (post) {
-          console.log("Post cargado exitosamente:", post);
+    if (postData && !draftFormData?.title) {
+      const startTime = performance.now();
 
-          const postFormData: DraftFormData = {
-            title: post.title,
-            excerpt: post.excerpt || "",
-            featuredImage: post.featuredImage || "",
-            content: isPostContent(post.content)
-              ? post.content
-              : { blocks: [], version: "1.0" },
-            status: post.status as "DRAFT" | "PUBLISHED",
-          };
+      console.log("Cargando post en formulario:", postData);
 
-          setFormData(postFormData);
-        }
-      } catch (error) {
-        console.error("Error cargando post:", error);
-        router.push("/admin/posts");
-      }
-    };
+      const postFormData: DraftFormData = {
+        title: postData.title,
+        excerpt: postData.excerpt || "",
+        featuredImage: postData.featuredImage || "",
+        content: isPostContent(postData.content)
+          ? postData.content
+          : { blocks: [], version: "1.0" },
+        status: postData.status as "DRAFT" | "PUBLISHED",
+      };
 
-    if (id) {
-      loadPost();
+      setFormData(postFormData);
+
+      const duration = performance.now() - startTime;
+      recordMetric("form-load", duration);
     }
-  }, [id, getPost, setFormData, router]);
+  }, [postData, draftFormData?.title, setFormData, recordMetric]);
 
-  // Mostrar loading mientras carga el post
-  if (postLoading && !currentPost) {
+  // Handlers modificados para usar React Query
+  const handleSaveDraft = async () => {
+    if (!postData) return;
+
+    try {
+      const updateData = {
+        title: formData.title,
+        excerpt: formData.excerpt,
+        content: formData.content,
+        featuredImage: formData.featuredImage,
+        status: "DRAFT" as const,
+      };
+
+      await updatePost.mutateAsync({
+        id: postData.id,
+        data: updateData,
+      });
+
+      toast({
+        title: "Borrador guardado",
+        description: "Los cambios se guardaron exitosamente",
+        variant: "default",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo guardar el borrador",
+        variant: "destructive",
+      });
+      console.error("Error saving draft:", error);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!postData || !canPublish) return;
+
+    try {
+      const updateData = {
+        title: formData.title,
+        excerpt: formData.excerpt,
+        content: formData.content,
+        featuredImage: formData.featuredImage,
+        status: "PUBLISHED" as const,
+      };
+
+      await updatePost.mutateAsync({
+        id: postData.id,
+        data: updateData,
+      });
+
+      toast({
+        title: "Post publicado",
+        description: "El post se publicó exitosamente",
+        variant: "default",
+      });
+
+      router.push("/admin/posts");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "No se pudo publicar el post",
+        variant: "destructive",
+      });
+      console.error("Error publishing post:", error);
+    }
+  };
+
+  // Debug info en desarrollo
+  const debugInfo =
+    process.env.NODE_ENV === "development"
+      ? {
+          renderCount,
+          hasPost: !!postData,
+          isLoading: postLoading,
+          hasUnsavedChanges,
+          cacheHit: postData && !postLoading,
+        }
+      : null;
+
+  // Loading state
+  if (postLoading && !postData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -109,17 +189,18 @@ export default function EditPostPage({ params }: EditPostPageProps) {
     );
   }
 
-  // Mostrar error si no se pudo cargar
-  if (error && !currentPost) {
+  // Error state
+  if (isError || !postData) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <p className="text-destructive mb-4">
-            Error al cargar el post: {error}
+            Error al cargar el post:{" "}
+            {postError?.message || "Post no encontrado"}
           </p>
           <button
             onClick={() => router.push("/admin/posts")}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90"
           >
             Volver a Posts
           </button>
@@ -130,6 +211,17 @@ export default function EditPostPage({ params }: EditPostPageProps) {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Debug info en desarrollo */}
+      {debugInfo && (
+        <div className="bg-gray-100 p-2 text-xs border-b">
+          <strong>Debug:</strong> Renders: {debugInfo.renderCount} | Post:{" "}
+          {debugInfo.hasPost ? "✓" : "✗"} | Loading:{" "}
+          {debugInfo.isLoading ? "✓" : "✗"} | Changes:{" "}
+          {debugInfo.hasUnsavedChanges ? "✓" : "✗"} | Cache:{" "}
+          {debugInfo.cacheHit ? "✓" : "✗"}
+        </div>
+      )}
+
       {/* Diálogo de recuperación de borrador */}
       <DraftRecoveryDialog
         isOpen={showDraftDialog}
@@ -137,11 +229,11 @@ export default function EditPostPage({ params }: EditPostPageProps) {
         onDiscardDraft={handleDiscardDraft}
       />
 
-      {/* Barra de header con acciones - Modificada para edición */}
+      {/* Header con indicadores de estado mejorados */}
       <PostHeaderBar
-        title={formData.title}
+        title={formData.title || `Editando: ${postData.title}`}
         hasUnsavedChanges={hasUnsavedChanges}
-        loading={loading}
+        loading={loading || updatePost.isPending}
         canPublish={canPublish}
         onBack={handleBack}
         onCancel={handleCancel}
@@ -186,11 +278,45 @@ export default function EditPostPage({ params }: EditPostPageProps) {
               <FeaturedImageUpload />
             </div>
 
-            {/* Información adicional */}
-            <PostSidebarInfo hasUnsavedChanges={hasUnsavedChanges} />
+            {/* Información adicional con estado de cache */}
+            <PostSidebarInfo
+              hasUnsavedChanges={hasUnsavedChanges}
+              // Props adicionales para mostrar info de cache en desarrollo
+              {...(process.env.NODE_ENV === "development" && {
+                extraInfo: {
+                  "Post ID": postData.id,
+                  "Cache Status": postData && !postLoading ? "Cached" : "Fresh",
+                  "Update Status": updatePost.isPending
+                    ? "Updating..."
+                    : "Ready",
+                  "Last Modified": postData.updatedAt
+                    ? new Date(postData.updatedAt).toLocaleTimeString()
+                    : "Unknown",
+                },
+              })}
+            />
           </div>
         </div>
       </div>
+
+      {/* Indicador de auto-save */}
+      {updatePost.isPending && (
+        <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
+          <div className="flex items-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            <span className="text-sm">Guardando cambios...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Indicador de éxito temporal */}
+      {updatePost.isSuccess && (
+        <div className="fixed bottom-4 right-4 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg animate-fade-in">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">✓ Cambios guardados</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

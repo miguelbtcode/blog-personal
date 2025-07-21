@@ -18,7 +18,7 @@ export function LatestPosts({
   pagination,
   showPagination = false,
 }: LatestPostsProps) {
-  if (posts.length === 0) {
+  if (posts?.length === 0) {
     return (
       <section className="py-16">
         <div className="max-w-6xl mx-auto px-4 text-center">
@@ -50,7 +50,7 @@ export function LatestPosts({
 
         {/* Grid de posts */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
-          {posts.map((post) => (
+          {posts?.map((post) => (
             <BlogCard key={post.id} post={post} />
           ))}
         </div>

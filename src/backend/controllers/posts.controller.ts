@@ -1,194 +1,346 @@
+// src/backend/controllers/posts.controller.ts - Usando el service con cache
 import { NextRequest } from "next/server";
 import { PostsService } from "../services/posts.service";
 import { createResponse } from "../utils/response";
-import {
-  validateRequest,
-  validateParams,
-  validateQuery,
-} from "../middleware/validation";
+import { validateRequest } from "../middleware/validation";
 import {
   createPostSchema,
-  updatePostSchema,
   postFiltersSchema,
-  postParamsSchema,
-  postSlugParamsSchema,
+  updatePostSchema,
 } from "@/shared/schemas";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export class PostsController {
   private postsService = new PostsService();
 
   /**
-   * GET /api/posts - Obtener lista de posts con filtros
+   * Obtener lista de posts con filtros
    */
   async getPosts(request: NextRequest) {
     try {
       const { searchParams } = new URL(request.url);
-      const filters = validateQuery(postFiltersSchema, searchParams);
+      const filters: Record<string, string> = {};
 
-      const result = await this.postsService.getPosts(filters);
-      return createResponse.success(result);
+      // Convertir searchParams a objeto
+      searchParams.forEach((value, key) => {
+        filters[key] = value;
+      });
+
+      // Validar parámetros
+      const validatedFilters = postFiltersSchema.parse(filters);
+      const result = await this.postsService.getPosts(validatedFilters);
+
+      const response = createResponse.success(result);
+
+      // Headers de cache para CDN
+      response.headers.set(
+        "Cache-Control",
+        "public, s-maxage=300, stale-while-revalidate=600"
+      );
+      response.headers.set("CDN-Cache-Control", "public, s-maxage=300");
+
+      return response;
     } catch (error) {
+      console.error("GET /api/posts error:", error);
       return createResponse.error(error);
     }
   }
 
-  /**
-   * GET /api/posts/[slug] - Obtener post por slug (PARA BLOG PÚBLICO)
-   */
-  async getPost(
-    request: NextRequest,
-    { params }: { params: { slug: string } }
-  ) {
+  async getPostById(id: string) {
     try {
-      const { slug } = validateParams(postSlugParamsSchema, params);
-
-      const post = await this.postsService.getPostBySlug(slug);
-      return createResponse.success(post);
-    } catch (error) {
-      return createResponse.error(error);
-    }
-  }
-
-  /**
-   * GET /api/posts/id/[id] - Obtener post por ID (PARA EDICIÓN/ADMIN)
-   */
-  async getPostById(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-  ) {
-    try {
-      const { id } = validateParams(postParamsSchema, params);
-
       const post = await this.postsService.getPostById(id);
-      return createResponse.success(post);
+      const response = createResponse.success(post);
+
+      response.headers.set(
+        "Cache-Control",
+        "public, s-maxage=600, stale-while-revalidate=1200"
+      );
+      response.headers.set("CDN-Cache-Control", "public, s-maxage=600");
+
+      return response;
     } catch (error) {
+      console.error(`GET /api/posts/${id} error:`, error);
       return createResponse.error(error);
     }
   }
 
   /**
-   * POST /api/posts - Crear nuevo post
+   * Obtener post individual por slug
+   */
+  async getPostBySlug(slug: string) {
+    try {
+      const post = await this.postsService.getPostBySlug(slug);
+      const response = createResponse.success(post);
+
+      response.headers.set(
+        "Cache-Control",
+        "public, s-maxage=600, stale-while-revalidate=1200"
+      );
+      response.headers.set("CDN-Cache-Control", "public, s-maxage=600");
+
+      return response;
+    } catch (error) {
+      console.error(`GET /api/posts/slug/${slug} error:`, error);
+      return createResponse.error(error);
+    }
+  }
+
+  /**
+   * Crear nuevo post
    */
   async createPost(request: NextRequest) {
     try {
-      const validatedData = await validateRequest(createPostSchema)(request);
+      const data = await validateRequest(createPostSchema)(request);
 
-      const post = await this.postsService.createPost(validatedData);
+      // Obtener authorId desde la sesión/token (implementar según tu auth)
+      const authorId = await this.getAuthorIdFromRequest(request);
+      if (!authorId) {
+        return createResponse.error(
+          new Error("Usuario no autenticado"),
+          "No autorizado",
+          401
+        );
+      }
+
+      const post = await this.postsService.createPost({
+        ...data,
+        authorId,
+      });
+
       return createResponse.success(post, "Post creado exitosamente", 201);
     } catch (error) {
+      console.error("POST /api/posts error:", error);
       return createResponse.error(error);
     }
   }
 
   /**
-   * PUT /api/posts/[id] - Actualizar post
+   * Actualizar post existente
    */
   async updatePost(
     request: NextRequest,
     { params }: { params: { id: string } }
   ) {
     try {
-      const { id } = validateParams(postParamsSchema, params);
-      const validatedData = await validateRequest(updatePostSchema)(request);
+      const body = await request.json();
+      const validatedData = updatePostSchema.parse(body);
 
-      const post = await this.postsService.updatePost(id, validatedData);
+      // Verificar permisos (el usuario puede editar este post)
+      const canEdit = await this.canEditPost(request, params.id);
+      if (!canEdit) {
+        return createResponse.error(
+          new Error("Sin permisos para editar este post"),
+          403
+        );
+      }
+
+      const post = await this.postsService.updatePost(params.id, validatedData);
+
       return createResponse.success(post, "Post actualizado exitosamente");
     } catch (error) {
+      console.error(`PUT /api/posts/${params.id} error:`, error);
       return createResponse.error(error);
     }
   }
 
   /**
-   * DELETE /api/posts/[id] - Eliminar post
+   * Eliminar post
    */
   async deletePost(
     request: NextRequest,
     { params }: { params: { id: string } }
   ) {
     try {
-      const { id } = validateParams(postParamsSchema, params);
+      // Verificar permisos
+      const canDelete = await this.canEditPost(request, params.id);
+      if (!canDelete) {
+        return createResponse.error(
+          new Error("Sin permisos para eliminar este post"),
+          "No autorizado",
+          403
+        );
+      }
 
-      await this.postsService.deletePost(id);
+      await this.postsService.deletePost(params.id);
+
       return createResponse.success(null, "Post eliminado exitosamente");
     } catch (error) {
+      console.error(`DELETE /api/posts/${params.id} error:`, error);
       return createResponse.error(error);
     }
   }
 
   /**
-   * GET /api/posts/author/[authorId] - Obtener posts de un autor
+   * Obtener posts por autor
    */
   async getPostsByAuthor(
     request: NextRequest,
     { params }: { params: { authorId: string } }
   ) {
     try {
-      const { authorId } = validateParams(postParamsSchema, {
-        id: params.authorId,
-      });
       const { searchParams } = new URL(request.url);
-      const filters = validateQuery(postFiltersSchema, searchParams);
+      const filters: Record<string, string> = {};
 
+      searchParams.forEach((value, key) => {
+        filters[key] = value;
+      });
+
+      const validatedFilters = postFiltersSchema.parse(filters);
       const result = await this.postsService.getPostsByAuthor(
-        authorId,
-        filters
+        params.authorId,
+        validatedFilters
       );
-      return createResponse.success(result);
+
+      const response = createResponse.success(result);
+      response.headers.set(
+        "Cache-Control",
+        "public, s-maxage=300, stale-while-revalidate=600"
+      );
+
+      return response;
     } catch (error) {
+      console.error(`GET /api/posts/author/${params.authorId} error:`, error);
       return createResponse.error(error);
     }
   }
 
   /**
-   * GET /api/posts/[id]/related - Obtener posts relacionados
+   * Obtener posts relacionados
    */
   async getRelatedPosts(
     request: NextRequest,
     { params }: { params: { id: string } }
   ) {
     try {
-      const { id } = validateParams(postParamsSchema, params);
       const { searchParams } = new URL(request.url);
       const limit = parseInt(searchParams.get("limit") || "5");
 
-      const posts = await this.postsService.getRelatedPosts(id, limit);
-      return createResponse.success(posts);
+      // Obtener el post para extraer categorías y tags
+      const post = await this.postsService.getPostById(params.id);
+      if (!post) {
+        return createResponse.error(
+          new Error("Post no encontrado"),
+          "No encontrado",
+          404
+        );
+      }
+
+      const categoryIds = post.categories?.map((c: any) => c.id) || [];
+      const tagIds = post.tags?.map((t: any) => t.id) || [];
+
+      const relatedPosts = await this.postsService.getRelatedPosts(
+        params.id,
+        categoryIds,
+        tagIds,
+        limit
+      );
+
+      const response = createResponse.success(relatedPosts);
+      response.headers.set(
+        "Cache-Control",
+        "public, s-maxage=600, stale-while-revalidate=1200"
+      );
+
+      return response;
+    } catch (error) {
+      console.error(`GET /api/posts/${params.id}/related error:`, error);
+      return createResponse.error(error);
+    }
+  }
+
+  /**
+   * Endpoint para estadísticas de cache (solo desarrollo/admin)
+   */
+  async getCacheStats(request: NextRequest) {
+    try {
+      // Verificar que sea admin o desarrollo
+      if (process.env.NODE_ENV !== "development") {
+        const isAdmin = await this.isAdmin(request);
+        if (!isAdmin) {
+          return createResponse.error(
+            new Error("No autorizado"),
+            "No autorizado",
+            403
+          );
+        }
+      }
+
+      const stats = this.postsService.getCacheStats();
+      return createResponse.success(stats);
     } catch (error) {
       return createResponse.error(error);
     }
   }
 
   /**
-   * PATCH /api/posts/[id]/publish - Publicar borrador
+   * Endpoint para limpiar cache (solo admin)
    */
-  async publishPost(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-  ) {
+  async clearCache(request: NextRequest) {
     try {
-      const { id } = validateParams(postParamsSchema, params);
+      const isAdmin = await this.isAdmin(request);
+      if (!isAdmin) {
+        return createResponse.error(
+          new Error("No autorizado"),
+          "No autorizado",
+          403
+        );
+      }
 
-      const post = await this.postsService.publishDraft(id);
-      return createResponse.success(post, "Post publicado exitosamente");
+      this.postsService.clearAllCaches();
+      return createResponse.success(null, "Cache limpiado exitosamente");
     } catch (error) {
       return createResponse.error(error);
     }
   }
 
-  /**
-   * PATCH /api/posts/[id]/unpublish - Convertir a borrador
-   */
-  async unpublishPost(
-    request: NextRequest,
-    { params }: { params: { id: string } }
-  ) {
+  // Métodos privados de utilidad
+  private async getAuthorIdFromRequest(
+    request: NextRequest
+  ): Promise<string | null> {
     try {
-      const { id } = validateParams(postParamsSchema, params);
-
-      const post = await this.postsService.unpublishPost(id);
-      return createResponse.success(post, "Post convertido a borrador");
+      const session = await getServerSession(authOptions);
+      return session?.user?.id || null;
     } catch (error) {
-      return createResponse.error(error);
+      console.error("Error getting session:", error);
+      return null;
+    }
+  }
+
+  private async canEditPost(
+    request: NextRequest,
+    postId: string
+  ): Promise<boolean> {
+    try {
+      const authorId = await this.getAuthorIdFromRequest(request);
+      if (!authorId) return false;
+
+      const post = await this.postsService.getPostById(postId);
+      if (!post) return false;
+
+      // El usuario puede editar si es el autor o es admin
+      const isAuthor = post.authorId === authorId;
+      const isAdmin = await this.isAdmin(request);
+
+      return isAuthor || isAdmin;
+    } catch {
+      return false;
+    }
+  }
+
+  private async isAdmin(request: NextRequest): Promise<boolean> {
+    // Implementar verificación de admin según tu sistema
+    try {
+      const authorId = await this.getAuthorIdFromRequest(request);
+      if (!authorId) return false;
+
+      // Verificar rol de admin en base de datos
+      // const user = await userService.getById(authorId);
+      // return user?.role === 'ADMIN';
+
+      return false; // Placeholder
+    } catch {
+      return false;
     }
   }
 }

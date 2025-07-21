@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createEmptyPost } from "@/lib/blockUtils";
 import { useToast } from "@/frontend/components/ui/Toast";
-import { usePosts } from "@/frontend/hooks/api/usePosts";
+import { useCreatePost, usePosts } from "@/frontend/hooks/api/usePosts";
 import { useDraftStore } from "@/frontend/stores/draft.store";
 import { useKeyboardShortcuts } from "@/frontend/hooks/ui/useKeyboardShortcuts";
 import { useNavigationGuard } from "@/frontend/hooks/auth/useNavigationGuard";
@@ -48,7 +48,7 @@ interface UseCreatePostFormReturn {
 export function useCreatePostForm(): UseCreatePostFormReturn {
   const { toast } = useToast();
   const router = useRouter();
-  const { createPost, loading } = usePosts();
+  const createPostMutation = useCreatePost();
 
   // Draft management
   const {
@@ -196,7 +196,7 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
         status: "DRAFT",
       };
 
-      const result = await createPost(postData);
+      const result = await createPostMutation.mutateAsync(postData);
 
       if (result) {
         clearDraft();
@@ -215,7 +215,7 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
         variant: "destructive",
       });
     }
-  }, [formData, validateForm, createPost, clearDraft, toast, router]);
+  }, [formData, validateForm, createPostMutation, clearDraft, toast, router]);
 
   const handlePublish = useCallback(async () => {
     if (!validateForm()) return;
@@ -229,7 +229,7 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
         status: "PUBLISHED",
       };
 
-      const result = await createPost(postData);
+      const result = await createPostMutation.mutateAsync(postData);
 
       if (result) {
         clearDraft();
@@ -248,7 +248,7 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
         variant: "destructive",
       });
     }
-  }, [formData, validateForm, createPost, clearDraft, toast, router]);
+  }, [formData, validateForm, createPostMutation, clearDraft, toast, router]);
 
   // === NAVIGATION HANDLERS ===
 
@@ -308,7 +308,7 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
     formData,
     errors,
     hasUnsavedChanges,
-    loading,
+    loading: createPostMutation.isPending,
 
     // Estado del diálogo
     showDraftDialog,

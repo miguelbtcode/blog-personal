@@ -1,4 +1,4 @@
-// app/(admin)/admin/posts/page.tsx
+// app/(admin)/admin/posts/page.tsx - Corregido
 "use client";
 
 import { useState } from "react";
@@ -12,9 +12,10 @@ import {
   Eye,
   Calendar,
 } from "lucide-react";
-import { usePosts } from "@/frontend/hooks/api/usePosts";
 import { useToast } from "@/frontend/components/ui/Toast";
 import { PostStatus } from "@/shared/enums";
+import { PostFilters } from "@/types";
+import { useDeletePost, usePosts } from "@/frontend/hooks/api/usePosts";
 
 export default function AdminPostsPage() {
   const router = useRouter();
@@ -22,16 +23,25 @@ export default function AdminPostsPage() {
 
   // Estados para filtros
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<PostStatus>();
+  const [statusFilter, setStatusFilter] = useState<PostStatus | "ALL">("ALL");
   const [page, setPage] = useState(1);
 
-  // Hook de posts con filtros
-  const { posts, pagination, loading, deletePost, refetch } = usePosts({
+  // Construir filtros
+  const filters: PostFilters = {
     search: search || undefined,
-    status: statusFilter || undefined,
+    status: statusFilter !== "ALL" ? statusFilter : undefined,
     page,
     limit: 10,
-  });
+    isAdmin: true,
+  };
+
+  // Hooks de React Query
+  const { data, isLoading, refetch } = usePosts(filters);
+  const deletePostMutation = useDeletePost();
+
+  // Extraer datos de la respuesta
+  const posts = data?.items || [];
+  const pagination = data?.pagination;
 
   // Manejar eliminación
   const handleDelete = async (id: string, title: string) => {
@@ -40,15 +50,14 @@ export default function AdminPostsPage() {
     );
 
     if (confirmDelete) {
-      const success = await deletePost(id);
-      if (success) {
+      try {
+        await deletePostMutation.mutateAsync(id);
         toast({
           title: "Post eliminado",
           description: `"${title}" se eliminó correctamente`,
           variant: "default",
         });
-        refetch();
-      } else {
+      } catch (error) {
         toast({
           title: "Error",
           description: "No se pudo eliminar el post",
@@ -112,7 +121,9 @@ export default function AdminPostsPage() {
               <Filter className="w-4 h-4 text-muted-foreground" />
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as PostStatus)}
+                onChange={(e) =>
+                  setStatusFilter(e.target.value as PostStatus | "ALL")
+                }
                 className="px-3 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary"
               >
                 <option value="ALL">Todos</option>
@@ -125,7 +136,7 @@ export default function AdminPostsPage() {
 
         {/* Lista de posts */}
         <div className="bg-card border border-border rounded-xl overflow-hidden">
-          {loading ? (
+          {isLoading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-2 text-muted-foreground">Cargando posts...</p>
@@ -266,7 +277,8 @@ export default function AdminPostsPage() {
 
                           <button
                             onClick={() => handleDelete(post.id, post.title)}
-                            className="p-2 hover:bg-muted rounded-lg transition-colors"
+                            disabled={deletePostMutation.isPending}
+                            className="p-2 hover:bg-muted rounded-lg transition-colors disabled:opacity-50"
                             title="Eliminar"
                           >
                             <Trash2 className="w-4 h-4 text-destructive" />

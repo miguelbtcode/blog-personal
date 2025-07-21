@@ -5,6 +5,7 @@ export interface PostFilters extends QueryParams {
   category?: string;
   tag?: string;
   status?: PostStatus;
+  isAdmin?: boolean;
 }
 
 export interface CommentFilters extends QueryParams {

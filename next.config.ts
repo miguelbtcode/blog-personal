@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
   experimental: {
     // Css optimization
     optimizeCss: true,
+    optimizePackageImports: ["lodash", "@tanstack/react-query"],
   },
 
   // Security headers

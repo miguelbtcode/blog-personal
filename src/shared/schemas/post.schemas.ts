@@ -42,7 +42,7 @@ export const createPostSchema = z.object({
     .max(160, "La descripción SEO es muy larga")
     .optional(),
 
-  publishedAt: z.string().datetime().optional(),
+  publishedAt: z.date().nullable().optional(),
 });
 
 // Schema para actualizar posts
@@ -56,6 +56,8 @@ export const postFiltersSchema = paginationSchema.extend({
   category: idSchema.optional(),
   tag: idSchema.optional(),
   search: z.string().optional(),
+
+  isAdmin: z.coerce.boolean().default(false).optional(),
 
   // Sorting
   sortBy: z
