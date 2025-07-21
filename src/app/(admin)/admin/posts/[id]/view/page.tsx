@@ -1,6 +1,6 @@
 "use client";
 
-import { PostEditor } from "@/frontend/components/admin/PostEditor";
+import { PostEditor } from "@/frontend/components/admin/posts/PostEditor";
 import { use } from "react";
 
 interface ViewPostPageProps {

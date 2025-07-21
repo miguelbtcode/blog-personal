@@ -12,7 +12,7 @@ import { PostSidebarInfo } from "@/frontend/components/admin/posts/create/PostSi
 import { DraftFormData, useDraftStore } from "@/frontend/stores/draft.store";
 import { useToast } from "@/frontend/components/ui/Toast";
 import { usePost, useUpdatePost } from "@/frontend/hooks/api/usePosts";
-import { UnsavedChangesGuard } from "./posts/create/UnsavedChangesGuard";
+import { UnsavedChangesGuard } from "./create/UnsavedChangesGuard";
 
 interface PostEditorProps {
   postId: string;

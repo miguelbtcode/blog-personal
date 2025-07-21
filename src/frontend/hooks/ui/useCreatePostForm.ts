@@ -94,13 +94,22 @@ export function useCreatePostForm(
   const hasInitializedRef = useRef(false);
 
   // Datos del formulario
-  const formData = draftData || {
-    title: "",
-    excerpt: "",
-    featuredImage: "",
-    content: createEmptyPost(),
-    status: "DRAFT" as const,
-  };
+  const formData =
+    mode === "create"
+      ? draftData || {
+          title: "",
+          excerpt: "",
+          featuredImage: "",
+          content: createEmptyPost(),
+          status: "DRAFT" as const,
+        }
+      : {
+          title: "",
+          excerpt: "",
+          featuredImage: "",
+          content: createEmptyPost(),
+          status: "DRAFT" as const,
+        };
 
   // === EFFECTS ===
 
@@ -196,15 +205,10 @@ export function useCreatePostForm(
   }, [toast]);
 
   const handleDiscardDraft = useCallback(() => {
-    clearDraft();
+    clearDraft(); // Limpiar el draft store
     setShouldShowDraftDialog(false);
     dialogShownRef.current = false;
-    toast({
-      title: "Borrador descartado",
-      description: "Se ha eliminado el borrador anterior",
-      variant: "default",
-    });
-  }, [clearDraft, toast]);
+  }, [clearDraft]);
 
   // === FORM HANDLERS ===
 
