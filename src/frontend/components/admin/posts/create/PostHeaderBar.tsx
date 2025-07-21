@@ -9,8 +9,9 @@ interface PostHeaderBarProps {
   canPublish: boolean;
   onBack: () => void;
   onCancel: () => void;
-  onSaveDraft: () => void;
-  onPublish: () => void;
+  onSaveDraft?: () => void;
+  onPublish?: () => void;
+  isReadOnly?: boolean;
 }
 
 export function PostHeaderBar({
@@ -22,6 +23,7 @@ export function PostHeaderBar({
   onCancel,
   onSaveDraft,
   onPublish,
+  isReadOnly = false,
 }: PostHeaderBarProps) {
   return (
     <div className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-20">
@@ -53,30 +55,38 @@ export function PostHeaderBar({
           </div>
 
           <div className="flex items-center space-x-3">
-            <button
-              onClick={onCancel}
-              className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Cancelar
-            </button>
+            {!isReadOnly && (
+              <>
+                <button
+                  onClick={onCancel}
+                  className="px-4 py-2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancelar
+                </button>
 
-            <button
-              onClick={onSaveDraft}
-              disabled={loading}
-              className="flex items-center space-x-2 px-4 py-2 bg-muted hover:bg-accent text-foreground rounded-lg transition-colors disabled:opacity-50"
-            >
-              <Save className="w-4 h-4" />
-              <span>{loading ? "Guardando..." : "Guardar Borrador"}</span>
-            </button>
+                {onSaveDraft && (
+                  <button
+                    onClick={onSaveDraft}
+                    disabled={loading}
+                    className="flex items-center space-x-2 px-4 py-2 bg-muted hover:bg-accent text-foreground rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{loading ? "Guardando..." : "Guardar Borrador"}</span>
+                  </button>
+                )}
 
-            <button
-              onClick={onPublish}
-              disabled={loading || !canPublish}
-              className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors disabled:opacity-50"
-            >
-              <Eye className="w-4 h-4" />
-              <span>Publicar</span>
-            </button>
+                {onPublish && (
+                  <button
+                    onClick={onPublish}
+                    disabled={loading || !canPublish}
+                    className="flex items-center space-x-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors disabled:opacity-50"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span>Publicar</span>
+                  </button>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>

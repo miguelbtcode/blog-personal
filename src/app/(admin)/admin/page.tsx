@@ -172,7 +172,7 @@ export default function AdminLoginPage() {
 
         {/* Footer */}
         <div className="text-center text-gray-400 text-sm">
-          <p>© 2024 miguelbtcode - Panel de Administración</p>
+          <p>© 2025 miguelbtcode - Panel de Administración</p>
         </div>
       </div>
     </div>

@@ -8,15 +8,22 @@ import { BlockEditor } from "./BlockEditor";
 
 interface PostBuilderProps {
   initialContent?: PostContent;
-  onChange: (content: PostContent) => void;
+  onChange?: (content: PostContent) => void;
+  readOnly?: boolean;
 }
 
-export function PostBuilder({ initialContent, onChange }: PostBuilderProps) {
+export function PostBuilder({
+  initialContent,
+  onChange,
+  readOnly = false,
+}: PostBuilderProps) {
   const [blocks, setBlocks] = useState<ContentBlock[]>(
     initialContent?.blocks || [createEmptyBlock("paragraph")]
   );
 
   const updateContent = (newBlocks: ContentBlock[]) => {
+    if (readOnly || !onChange) return;
+
     const reorderedBlocks = reorderBlocks(newBlocks);
     setBlocks(reorderedBlocks);
     onChange({
@@ -64,19 +71,26 @@ export function PostBuilder({ initialContent, onChange }: PostBuilderProps) {
           <BlockEditor
             key={block.id}
             block={block}
-            onUpdate={(data) => updateBlock(block.id, data)}
-            onDelete={() => deleteBlock(block.id)}
-            onMoveUp={index > 0 ? () => moveBlock(block.id, "up") : undefined}
-            onMoveDown={
-              index < blocks.length - 1
-                ? () => moveBlock(block.id, "down")
-                : undefined
+            onUpdate={
+              readOnly ? undefined : (data) => updateBlock(block.id, data)
             }
+            onDelete={readOnly ? undefined : () => deleteBlock(block.id)}
+            onMoveUp={
+              readOnly || index === 0
+                ? undefined
+                : () => moveBlock(block.id, "up")
+            }
+            onMoveDown={
+              readOnly || index === blocks.length - 1
+                ? undefined
+                : () => moveBlock(block.id, "down")
+            }
+            readOnly={readOnly}
           />
         ))}
       </div>
 
-      <BlockToolbar onAddBlock={addBlock} />
+      {!readOnly && <BlockToolbar onAddBlock={addBlock} />}
     </div>
   );
 }

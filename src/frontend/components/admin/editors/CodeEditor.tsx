@@ -6,26 +6,29 @@ import type { CodeData } from "@/types/content";
 
 interface CodeEditorProps {
   data: CodeData & { editorTheme?: "auto" | "light" | "dark" };
-  onChange: (
+  onChange?: (
     data: CodeData & { editorTheme?: "auto" | "light" | "dark" }
   ) => void;
+  readOnly?: boolean;
 }
 
-export function CodeEditor({ data, onChange }: CodeEditorProps) {
+export function CodeEditor({
+  data,
+  onChange,
+  readOnly = false,
+}: CodeEditorProps) {
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     const checkDarkMode = () => {
       setIsDark(document.documentElement.classList.contains("dark"));
     };
-
     checkDarkMode();
     const observer = new MutationObserver(checkDarkMode);
     observer.observe(document.documentElement, {
       attributes: true,
       attributeFilter: ["class"],
     });
-
     return () => observer.disconnect();
   }, []);
 
@@ -50,76 +53,80 @@ export function CodeEditor({ data, onChange }: CodeEditorProps) {
     { value: "ruby", label: "Ruby" },
     { value: "go", label: "Go" },
     { value: "rust", label: "Rust" },
-    { value: "kotlin", label: "Kotlin" },
-    { value: "swift", label: "Swift" },
   ];
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 items-center flex-wrap">
-        <select
-          value={data.language}
-          onChange={(e) => onChange({ ...data, language: e.target.value })}
-          className="px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-        >
-          {languages.map((lang) => (
-            <option key={lang.value} value={lang.value}>
-              {lang.label}
-            </option>
-          ))}
-        </select>
+      {!readOnly && (
+        <div className="flex gap-3 items-center flex-wrap">
+          <select
+            value={data.language}
+            onChange={(e) => onChange?.({ ...data, language: e.target.value })}
+            className="px-3 py-2 border border-border bg-background rounded-lg"
+          >
+            {languages.map((lang) => (
+              <option key={lang.value} value={lang.value}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
 
-        <select
-          value={data.editorTheme || "auto"}
-          onChange={(e) =>
-            onChange({
-              ...data,
-              editorTheme: e.target.value as "auto" | "light" | "dark",
-            })
-          }
-          className="px-3 py-2 border border-border bg-background text-foreground rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-        >
-          <option value="auto">🔄 Auto</option>
-          <option value="light">☀️ Claro</option>
-          <option value="dark">🌙 Oscuro</option>
-        </select>
-
-        <input
-          type="text"
-          placeholder="Nombre del archivo (opcional)"
-          value={data.filename || ""}
-          onChange={(e) => onChange({ ...data, filename: e.target.value })}
-          className="flex-1 min-w-48 px-3 py-2 border border-border bg-background text-foreground placeholder:text-muted-foreground rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
-        />
-
-        <label className="flex items-center gap-2 text-sm text-foreground font-medium">
-          <input
-            type="checkbox"
-            checked={data.showLineNumbers}
+          <select
+            value={data.editorTheme || "auto"}
             onChange={(e) =>
-              onChange({ ...data, showLineNumbers: e.target.checked })
+              onChange?.({
+                ...data,
+                editorTheme: e.target.value as "auto" | "light" | "dark",
+              })
             }
-            className="w-4 h-4 text-primary border-border rounded focus:ring-primary/20 checked:bg-primary checked:border-primary"
-          />
-          Números de línea
-        </label>
-      </div>
+            className="px-3 py-2 border border-border bg-background rounded-lg"
+          >
+            <option value="auto">🔄 Auto</option>
+            <option value="light">☀️ Claro</option>
+            <option value="dark">🌙 Oscuro</option>
+          </select>
 
-      <div className="border border-border rounded-lg overflow-hidden shadow-sm">
+          <input
+            type="text"
+            placeholder="Nombre del archivo (opcional)"
+            value={data.filename || ""}
+            onChange={(e) => onChange?.({ ...data, filename: e.target.value })}
+            className="flex-1 min-w-48 px-3 py-2 border border-border bg-background rounded-lg"
+          />
+
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={data.showLineNumbers}
+              onChange={(e) =>
+                onChange?.({ ...data, showLineNumbers: e.target.checked })
+              }
+              className="w-4 h-4"
+            />
+            Números de línea
+          </label>
+        </div>
+      )}
+
+      <div className="border border-border rounded-lg overflow-hidden">
         <Editor
           height="300px"
           language={data.language}
           value={data.code}
-          onChange={(value) => onChange({ ...data, code: value || "" })}
+          onChange={
+            readOnly
+              ? undefined
+              : (value) => onChange?.({ ...data, code: value || "" })
+          }
           theme={getEditorTheme()}
           options={{
             minimap: { enabled: false },
             lineNumbers: data.showLineNumbers ? "on" : "off",
             fontSize: 14,
             scrollBeyondLastLine: false,
-            fontFamily: "'Fira Code', 'Monaco', 'Cascadia Code', monospace",
-            renderLineHighlight: "line",
-            cursorBlinking: "smooth",
+            fontFamily: "'Fira Code', 'Monaco', monospace",
+            readOnly: readOnly,
+            domReadOnly: readOnly,
             padding: { top: 16, bottom: 16 },
           }}
         />

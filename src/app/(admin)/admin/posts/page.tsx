@@ -267,7 +267,7 @@ export default function AdminPostsPage() {
 
                           <button
                             onClick={() =>
-                              window.open(`/blog/${post.slug}`, "_blank")
+                              router.push(`/admin/posts/${post.id}/view`)
                             }
                             className="p-2 hover:bg-muted rounded-lg transition-colors"
                             title="Ver"

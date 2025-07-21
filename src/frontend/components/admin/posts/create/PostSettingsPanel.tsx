@@ -4,12 +4,14 @@ import { Settings2 } from "lucide-react";
 
 interface PostSettingsPanelProps {
   status: "DRAFT" | "PUBLISHED";
-  onStatusChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  onStatusChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  readOnly?: boolean;
 }
 
 export function PostSettingsPanel({
   status,
   onStatusChange,
+  readOnly = false,
 }: PostSettingsPanelProps) {
   return (
     <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
@@ -25,8 +27,13 @@ export function PostSettingsPanel({
           </label>
           <select
             value={status}
-            onChange={onStatusChange}
-            className="w-full p-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary/20 focus:border-primary"
+            onChange={readOnly ? undefined : onStatusChange}
+            disabled={readOnly}
+            className={`w-full p-3 border rounded-lg ${
+              readOnly
+                ? "border-gray-200 bg-gray-50 cursor-not-allowed opacity-70"
+                : "border-border bg-background focus:ring-2 focus:ring-primary/20"
+            }`}
           >
             <option value="DRAFT">📝 Borrador</option>
             <option value="PUBLISHED">🚀 Publicado</option>

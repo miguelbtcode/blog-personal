@@ -1,4 +1,3 @@
-// src/frontend/services/posts.service.ts - Con validación de schemas
 import {
   CreatePostData,
   UpdatePostData,
@@ -14,6 +13,7 @@ import {
   UpdatePostInput,
 } from "@/shared/schemas/post.schemas";
 import { apiService } from "./api.service";
+import { parsePostContent } from "@/lib/blockUtils";
 
 interface PostsListResponse {
   items: PostWithDetails[];
@@ -52,6 +52,9 @@ export class PostService {
     if (!response.success || !response.data) {
       throw new Error(response.error || "Post no encontrado");
     }
+
+    response.data.content = parsePostContent(response.data.content);
+
     return response.data;
   }
 
@@ -88,25 +91,40 @@ export class PostService {
     id: string,
     data: Partial<UpdatePostData>
   ): Promise<PostWithDetails> {
-    if (!id?.trim()) {
-      throw new Error("ID de post inválido");
+    try {
+      if (!id?.trim()) {
+        throw new Error("ID de post inválido");
+      }
+
+      console.log("Updating post with data:", {
+        ...data,
+        id,
+      });
+
+      // Validar datos con schema (incluye el ID)
+      const validatedData: UpdatePostInput = updatePostSchema.parse({
+        ...data,
+        id,
+      });
+
+      const response = await apiService.request<PostWithDetails>(
+        `/posts/${id}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(validatedData),
+        }
+      );
+
+      if (!response.success || !response.data) {
+        throw new Error(response.error || "Error al actualizar post");
+      }
+      return response.data;
+    } catch (error) {
+      console.error("Error updating post:", error);
+      throw new Error(
+        error instanceof Error ? error.message : "Error al actualizar post"
+      );
     }
-
-    // Validar datos con schema (incluye el ID)
-    const validatedData: UpdatePostInput = updatePostSchema.parse({
-      ...data,
-      id,
-    });
-
-    const response = await apiService.request<PostWithDetails>(`/posts/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(validatedData),
-    });
-
-    if (!response.success || !response.data) {
-      throw new Error(response.error || "Error al actualizar post");
-    }
-    return response.data;
   }
 
   async deletePost(id: string): Promise<boolean> {

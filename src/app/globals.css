@@ -112,3 +112,12 @@ body {
 .transition-colors {
   transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) skewX(-12deg); }
+  100% { transform: translateX(300%) skewX(-12deg); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s ease-in-out;
+}

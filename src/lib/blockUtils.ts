@@ -78,3 +78,25 @@ export function isPostContent(
     Array.isArray((value as any).blocks)
   );
 }
+
+export function parsePostContent(content: any): PostContent {
+  if (typeof content === "string") {
+    try {
+      const parsed = JSON.parse(content);
+      return {
+        blocks:
+          parsed.blocks?.map((block: any) => ({
+            id: block.id,
+            type: block.type as BlockType,
+            order: block.order,
+            data: block.data,
+          })) || [],
+        version: parsed.version || "1.0",
+      };
+    } catch {
+      return { blocks: [], version: "1.0" };
+    }
+  }
+
+  return content || { blocks: [], version: "1.0" };
+}

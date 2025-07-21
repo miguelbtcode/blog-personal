@@ -1,10 +1,8 @@
-// app/(admin)/admin/posts/create/page.tsx
 "use client";
 
 import { useCreatePostForm } from "@/frontend/hooks/ui/useCreatePostForm";
 
 // Componentes específicos
-import { DraftRecoveryDialog } from "@/frontend/components/admin/posts/create/DraftRecoveryDialog";
 import { PostHeaderBar } from "@/frontend/components/admin/posts/create/PostHeaderBar";
 import { PostBasicInfoForm } from "@/frontend/components/admin/posts/create/PostBasicInfoForm";
 import { PostContentEditor } from "@/frontend/components/admin/posts/create/PostContentEditor";
@@ -20,13 +18,6 @@ export default function CreatePostPage() {
     errors,
     hasUnsavedChanges,
     loading,
-
-    // Estado del diálogo
-    showDraftDialog,
-
-    // Handlers del diálogo
-    handleLoadDraft,
-    handleDiscardDraft,
 
     // Handlers del formulario
     handleTitleChange,
@@ -46,13 +37,6 @@ export default function CreatePostPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Diálogo de recuperación de borrador */}
-      <DraftRecoveryDialog
-        isOpen={showDraftDialog}
-        onLoadDraft={handleLoadDraft}
-        onDiscardDraft={handleDiscardDraft}
-      />
-
       {/* Barra de header con acciones */}
       <PostHeaderBar
         title={formData.title}

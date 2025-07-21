@@ -10,13 +10,14 @@ import { ImageEditor } from "./editors/ImageEditor";
 
 interface BlockEditorProps {
   block: ContentBlock;
-  onUpdate: (data: any) => void;
-  onDelete: () => void;
+  onUpdate?: (data: any) => void;
+  onDelete?: () => void;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   isSelected?: boolean;
   onSelect?: () => void;
   onDrop?: (draggedId: string, targetId: string) => void;
+  readOnly?: boolean;
 }
 
 export function BlockEditor({
@@ -28,12 +29,14 @@ export function BlockEditor({
   isSelected,
   onSelect,
   onDrop,
+  readOnly = false,
 }: BlockEditorProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [hoverTimeout, setHoverTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
 
   const handleMouseEnter = () => {
+    if (readOnly) return;
     if (hoverTimeout) {
       clearTimeout(hoverTimeout);
       setHoverTimeout(null);
@@ -42,6 +45,7 @@ export function BlockEditor({
   };
 
   const handleMouseLeave = () => {
+    if (readOnly) return;
     const timeout = setTimeout(() => {
       setIsHovered(false);
     }, 300);
@@ -51,13 +55,37 @@ export function BlockEditor({
   const renderEditor = () => {
     switch (block.type) {
       case "heading":
-        return <HeadingEditor data={block.data} onChange={onUpdate} />;
+        return (
+          <HeadingEditor
+            data={block.data}
+            onChange={readOnly ? undefined : onUpdate}
+            readOnly={readOnly}
+          />
+        );
       case "paragraph":
-        return <ParagraphEditor data={block.data} onChange={onUpdate} />;
+        return (
+          <ParagraphEditor
+            data={block.data}
+            onChange={readOnly ? undefined : onUpdate}
+            readOnly={readOnly}
+          />
+        );
       case "code":
-        return <CodeEditor data={block.data} onChange={onUpdate} />;
+        return (
+          <CodeEditor
+            data={block.data}
+            onChange={readOnly ? undefined : onUpdate}
+            readOnly={readOnly}
+          />
+        );
       case "image":
-        return <ImageEditor data={block.data} onChange={onUpdate} />;
+        return (
+          <ImageEditor
+            data={block.data}
+            onChange={readOnly ? undefined : onUpdate}
+            readOnly={readOnly}
+          />
+        );
       default:
         return (
           <div className="text-muted-foreground">
@@ -70,32 +98,42 @@ export function BlockEditor({
   return (
     <div
       className={`group relative border bg-card rounded-lg p-6 transition-all duration-200 ${
+        readOnly ? "cursor-default opacity-90" : ""
+      } ${
         isDragOver
           ? "border-primary bg-primary/10 shadow-lg"
           : isSelected
           ? "border-primary bg-primary/5 shadow-md"
-          : isHovered
+          : isHovered && !readOnly
           ? "border-border/80 hover:shadow-sm"
           : "border-border"
       }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      onDragOver={(e) => {
-        e.preventDefault();
-        setIsDragOver(true);
-      }}
-      onDragLeave={() => setIsDragOver(false)}
-      onDrop={(e) => {
-        e.preventDefault();
-        const draggedId = e.dataTransfer.getData("text/plain");
-        if (draggedId !== block.id && onDrop) {
-          onDrop(draggedId, block.id);
-        }
-        setIsDragOver(false);
-      }}
+      onDragOver={
+        !readOnly
+          ? (e) => {
+              e.preventDefault();
+              setIsDragOver(true);
+            }
+          : undefined
+      }
+      onDragLeave={!readOnly ? () => setIsDragOver(false) : undefined}
+      onDrop={
+        !readOnly
+          ? (e) => {
+              e.preventDefault();
+              const draggedId = e.dataTransfer.getData("text/plain");
+              if (draggedId !== block.id && onDrop) {
+                onDrop(draggedId, block.id);
+              }
+              setIsDragOver(false);
+            }
+          : undefined
+      }
     >
       {/* Control lateral derecho - Eliminar */}
-      {(isHovered || isSelected) && (
+      {!readOnly && (isHovered || isSelected) && onDelete && (
         <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-16">
           <button
             onClick={(e) => {
@@ -111,7 +149,7 @@ export function BlockEditor({
       )}
 
       {/* Controles laterales izquierdos - Centrados verticalmente */}
-      {(isHovered || isSelected) && (
+      {!readOnly && (isHovered || isSelected) && (onMoveUp || onMoveDown) && (
         <div className="absolute left-0 top-1/2 transform -translate-y-1/2 -translate-x-16 flex flex-col gap-2">
           {onMoveUp && (
             <button

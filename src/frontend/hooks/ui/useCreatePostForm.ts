@@ -22,10 +22,21 @@ interface UseCreatePostFormReturn {
   hasUnsavedChanges: boolean;
   loading: boolean;
 
-  // Estado del diálogo
-  showDraftDialog: boolean;
+  // Estado del modal de confirmación (reemplaza al DraftRecoveryDialog)
+  showUnsavedChangesModal: boolean;
+  unsavedChangesConfig: {
+    title: string;
+    message: string;
+    confirmText: string;
+    cancelText: string;
+  };
 
-  // Handlers del diálogo
+  // Handlers del modal
+  handleConfirmLeave: () => void;
+  handleCancelLeave: () => void;
+
+  // Para casos específicos donde se necesita cargar un draft
+  shouldShowDraftDialog: boolean;
   handleLoadDraft: () => void;
   handleDiscardDraft: () => void;
 
@@ -45,7 +56,9 @@ interface UseCreatePostFormReturn {
   canPublish: boolean;
 }
 
-export function useCreatePostForm(): UseCreatePostFormReturn {
+export function useCreatePostForm(
+  mode: "create" | "edit" = "create"
+): UseCreatePostFormReturn {
   const { toast } = useToast();
   const router = useRouter();
   const createPostMutation = useCreatePost();
@@ -61,9 +74,22 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
 
   // Local state
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showDraftDialog, setShowDraftDialog] = useState(false);
 
-  // Refs para controlar el diálogo
+  // Estado para modal de confirmación de cambios sin guardar
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [unsavedChangesConfig, setUnsavedChangesConfig] = useState({
+    title: "¿Abandonar sin guardar?",
+    message:
+      "Tienes cambios sin guardar que se perderán si continúas. ¿Estás seguro de que quieres salir?",
+    confirmText: "Abandonar cambios",
+    cancelText: "Continuar editando",
+  });
+
+  // Estado para el diálogo de draft (solo en modo create)
+  const [shouldShowDraftDialog, setShouldShowDraftDialog] = useState(false);
+
+  // Refs para controlar acciones pendientes
+  const pendingActionRef = useRef<(() => void) | null>(null);
   const dialogShownRef = useRef(false);
   const hasInitializedRef = useRef(false);
 
@@ -80,7 +106,11 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
 
   // Cargar borrador al montar
   useEffect(() => {
-    if (!hasInitializedRef.current && !dialogShownRef.current) {
+    if (
+      mode === "create" &&
+      !hasInitializedRef.current &&
+      !dialogShownRef.current
+    ) {
       hasInitializedRef.current = true;
 
       if (draftData && hasDraft()) {
@@ -93,12 +123,12 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
               JSON.stringify(createEmptyPost()));
 
         if (hasContent) {
-          setShowDraftDialog(true);
+          setShouldShowDraftDialog(true);
           dialogShownRef.current = true;
         }
       }
     }
-  }, [draftData, hasDraft]);
+  }, [mode, draftData, hasDraft]);
 
   // === VALIDATION ===
 
@@ -128,10 +158,36 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
     [errors]
   );
 
+  // === MODAL HANDLERS ===
+
+  const showUnsavedChangesConfirmation = useCallback(
+    (action: () => void, config?: Partial<typeof unsavedChangesConfig>) => {
+      pendingActionRef.current = action;
+      if (config) {
+        setUnsavedChangesConfig((prev) => ({ ...prev, ...config }));
+      }
+      setShowUnsavedChangesModal(true);
+    },
+    []
+  );
+
+  const handleConfirmLeave = useCallback(() => {
+    setShowUnsavedChangesModal(false);
+    if (pendingActionRef.current) {
+      pendingActionRef.current();
+      pendingActionRef.current = null;
+    }
+  }, []);
+
+  const handleCancelLeave = useCallback(() => {
+    setShowUnsavedChangesModal(false);
+    pendingActionRef.current = null;
+  }, []);
+
   // === DRAFT HANDLERS ===
 
   const handleLoadDraft = useCallback(() => {
-    setShowDraftDialog(false);
+    setShouldShowDraftDialog(false);
     toast({
       title: "Borrador cargado",
       description: "Se ha restaurado tu trabajo anterior",
@@ -141,7 +197,7 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
 
   const handleDiscardDraft = useCallback(() => {
     clearDraft();
-    setShowDraftDialog(false);
+    setShouldShowDraftDialog(false);
     dialogShownRef.current = false;
     toast({
       title: "Borrador descartado",
@@ -253,32 +309,40 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
   // === NAVIGATION HANDLERS ===
 
   const handleBack = useCallback(() => {
+    const doBack = () => router.back();
+
     if (hasUnsavedChanges) {
-      const confirmExit = window.confirm(
-        "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?"
-      );
-      if (confirmExit) {
-        router.back();
-      }
+      showUnsavedChangesConfirmation(doBack, {
+        title: "¿Salir sin guardar?",
+        message:
+          "Tienes cambios sin guardar. ¿Estás seguro de que quieres salir?",
+        confirmText: "Salir",
+        cancelText: "Quedarme",
+      });
     } else {
-      router.back();
+      doBack();
     }
-  }, [hasUnsavedChanges, router]);
+  }, [hasUnsavedChanges, router, showUnsavedChangesConfirmation]);
 
   const handleCancel = useCallback(() => {
-    if (hasUnsavedChanges) {
-      const confirmCancel = window.confirm(
-        "¿Estás seguro de que quieres cancelar? Se perderán todos los cambios."
-      );
-      if (confirmCancel) {
-        clearDraft();
-        dialogShownRef.current = false;
-        router.back();
-      }
-    } else {
+    const doCancel = () => {
+      clearDraft();
+      dialogShownRef.current = false;
       router.back();
+    };
+
+    if (hasUnsavedChanges) {
+      showUnsavedChangesConfirmation(doCancel, {
+        title: "¿Cancelar edición?",
+        message:
+          "¿Estás seguro de que quieres cancelar? Se perderán todos los cambios sin guardar.",
+        confirmText: "Cancelar edición",
+        cancelText: "Continuar editando",
+      });
+    } else {
+      doCancel();
     }
-  }, [hasUnsavedChanges, clearDraft, router]);
+  }, [hasUnsavedChanges, clearDraft, router, showUnsavedChangesConfirmation]);
 
   // === COMPUTED VALUES ===
 
@@ -298,9 +362,8 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
     onSave: handleSaveDraft,
     onPublish: handlePublish,
     onCancel: handleCancel,
-    enabled: !showDraftDialog,
+    enabled: !showUnsavedChangesModal && !shouldShowDraftDialog,
   });
-
   // === RETURN ===
 
   return {
@@ -310,10 +373,16 @@ export function useCreatePostForm(): UseCreatePostFormReturn {
     hasUnsavedChanges,
     loading: createPostMutation.isPending,
 
-    // Estado del diálogo
-    showDraftDialog,
+    // Estado del modal de confirmación
+    showUnsavedChangesModal,
+    unsavedChangesConfig,
+
+    // Handlers del modal
+    handleConfirmLeave,
+    handleCancelLeave,
 
     // Handlers del diálogo
+    shouldShowDraftDialog,
     handleLoadDraft,
     handleDiscardDraft,
 

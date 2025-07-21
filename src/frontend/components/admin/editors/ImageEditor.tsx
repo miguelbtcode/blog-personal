@@ -6,26 +6,29 @@ import type { ImageData } from "@/types/content";
 
 interface ImageEditorProps {
   data: ImageData;
-  onChange: (data: ImageData) => void;
+  onChange?: (data: ImageData) => void;
+  readOnly?: boolean;
 }
 
-export function ImageEditor({ data, onChange }: ImageEditorProps) {
+export function ImageEditor({
+  data,
+  onChange,
+  readOnly = false,
+}: ImageEditorProps) {
   const [uploading, setUploading] = useState(false);
 
   const handleFileUpload = async (file: File) => {
+    if (readOnly || !onChange) return;
     setUploading(true);
 
     try {
       const formData = new FormData();
       formData.append("file", file);
-
       const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
-
       if (!response.ok) throw new Error("Error al subir imagen");
-
       const result = await response.json();
       onChange({ ...data, url: result.url, alt: file.name });
     } catch (error) {
@@ -44,14 +47,16 @@ export function ImageEditor({ data, onChange }: ImageEditorProps) {
             alt={data.alt}
             className="max-w-full h-auto rounded-lg"
           />
-          <button
-            onClick={() => onChange({ url: "", alt: "", caption: "" })}
-            className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
-          >
-            <X className="w-4 h-4" />
-          </button>
+          {!readOnly && (
+            <button
+              onClick={() => onChange?.({ url: "", alt: "", caption: "" })}
+              className="absolute top-2 right-2 p-1 bg-red-500 text-white rounded-full hover:bg-red-600"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
-      ) : (
+      ) : !readOnly ? (
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
           <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
           <p className="text-gray-600 mb-4">Sube una imagen</p>
@@ -72,22 +77,40 @@ export function ImageEditor({ data, onChange }: ImageEditorProps) {
             {uploading ? "Subiendo..." : "Seleccionar imagen"}
           </label>
         </div>
-      )}
+      ) : null}
 
       <div className="space-y-2">
         <input
           type="text"
           placeholder="Texto alternativo"
           value={data.alt}
-          onChange={(e) => onChange({ ...data, alt: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+          onChange={
+            readOnly
+              ? undefined
+              : (e) => onChange?.({ ...data, alt: e.target.value })
+          }
+          readOnly={readOnly}
+          className={`w-full px-3 py-2 border rounded ${
+            readOnly
+              ? "border-gray-200 bg-gray-50"
+              : "border-gray-300 focus:ring-2 focus:ring-blue-500"
+          }`}
         />
         <input
           type="text"
           placeholder="Leyenda (opcional)"
           value={data.caption || ""}
-          onChange={(e) => onChange({ ...data, caption: e.target.value })}
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
+          onChange={
+            readOnly
+              ? undefined
+              : (e) => onChange?.({ ...data, caption: e.target.value })
+          }
+          readOnly={readOnly}
+          className={`w-full px-3 py-2 border rounded ${
+            readOnly
+              ? "border-gray-200 bg-gray-50"
+              : "border-gray-300 focus:ring-2 focus:ring-blue-500"
+          }`}
         />
       </div>
     </div>

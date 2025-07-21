@@ -12,10 +12,7 @@ export const createPostSchema = z.object({
     .min(1, "El título es requerido")
     .max(200, "El título es muy largo"),
 
-  content: z.any().refine((content) => {
-    // Validar que sea un objeto válido con estructura de post
-    return content && typeof content === "object";
-  }, "El contenido debe tener un formato válido"),
+  content: z.nonoptional(z.any(), "El contenido es requerido"),
 
   excerpt: z
     .string()

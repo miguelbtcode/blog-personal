@@ -31,7 +31,8 @@ export type UserWithPosts = User & {
   posts: Post[];
 };
 
-export type PostWithDetails = Post & {
+export type PostWithDetails = Omit<Post, "content"> & {
+  content: PostContent;
   author: Pick<User, "id" | "name" | "image" | "bio">;
   categories: (PostCategory & {
     category: Pick<Category, "id" | "name" | "slug" | "color">;
